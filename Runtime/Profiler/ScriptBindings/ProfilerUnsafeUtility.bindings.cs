@@ -10,7 +10,7 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
-
+using RequiredMember = UnityEngine.Scripting.RequiredMemberAttribute;
 namespace Unity.Profiling.LowLevel.Unsafe
 {
     // Metadata parameter.

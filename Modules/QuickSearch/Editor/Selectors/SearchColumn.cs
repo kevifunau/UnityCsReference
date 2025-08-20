@@ -91,7 +91,9 @@ namespace UnityEditor.Search
 
             using (var ms = new MemoryStream(Convert.FromBase64String(stream)))
             {
+#pragma warning disable SYSLIB0011
                 var formatter = new BinaryFormatter();
+#pragma warning restore SYSLIB0011
                 try
                 {
                     var methodInfo = (MethodInfo)formatter.Deserialize(ms);
@@ -120,7 +122,9 @@ namespace UnityEditor.Search
 
             using (var ms = new MemoryStream())
             {
+#pragma warning disable SYSLIB0011
                 var formatter = new BinaryFormatter();
+#pragma warning restore SYSLIB0011
                 formatter.Serialize(ms, methodInfo);
                 stream = Convert.ToBase64String(ms.ToArray());
             }

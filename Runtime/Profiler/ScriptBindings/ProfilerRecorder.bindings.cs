@@ -11,7 +11,7 @@ using Unity.Burst;
 using Unity.Profiling.LowLevel;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
-
+using RequiredMember = UnityEngine.Scripting.RequiredMemberAttribute;
 namespace Unity.Profiling.LowLevel.Unsafe
 {
     [UsedByNativeCode]

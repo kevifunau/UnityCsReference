@@ -14,8 +14,10 @@ namespace UnityEditor.Macros
 {
     public static class MethodEvaluator
     {
+#pragma warning disable SYSLIB0011
         private static readonly BinaryFormatter s_Formatter =
             new BinaryFormatter { AssemblyFormat = FormatterAssemblyStyle.Simple };
+#pragma warning restore SYSLIB0011
 
         private class AssemblyResolver
         {

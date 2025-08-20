@@ -17,7 +17,7 @@ using UnityEngine.Experimental.Rendering;
 using Unity.Collections;
 using Unity.Jobs;
 using System.Globalization;
-
+using RequiredMember = UnityEngine.Scripting.RequiredMemberAttribute;
 namespace UnityEngine
 {
     [NativeContainer]

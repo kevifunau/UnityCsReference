@@ -516,9 +516,10 @@ namespace UnityEditor
             {
                 return default(T);
             }
-
+#pragma warning disable SYSLIB0011
             System.Runtime.Serialization.IFormatter formatter =
                 new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+#pragma warning restore SYSLIB0011
             Stream stream = new MemoryStream();
             using (stream)
             {
