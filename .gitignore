@@ -1,0 +1,22 @@
+
+
+
+
+
+.vscode/*
+.vs
+
+# -------------------------------------------
+# 操作系统和编辑器生成的文件
+# -------------------------------------------
+
+# macOS
+.DS_Store
+._*
+
+# JetBrains IDE (如 Rider, IntelliJ IDEA, Android Studio)
+.idea/
+
+
+obj/
+bin/

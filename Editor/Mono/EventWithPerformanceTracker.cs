@@ -419,7 +419,7 @@ namespace UnityEditor
                 m_Delegates = EventWithPerformanceTracker<T>.BuildDelegate(m_Scope, value);
             }
 
-            return new Invoker(ref m_Delegates);
+            return new Invoker(m_Delegates);
         }
 
         internal readonly ref struct Invoker
@@ -427,7 +427,7 @@ namespace UnityEditor
             private readonly EventWithPerformanceTracker.Entry m_Delegates;
             public Enumerator GetEnumerator() => new Enumerator(in this);
 
-            public Invoker(ref EventWithPerformanceTracker.Entry dlg)
+            public Invoker(EventWithPerformanceTracker.Entry dlg)
             {
                 m_Delegates = dlg;
             }
