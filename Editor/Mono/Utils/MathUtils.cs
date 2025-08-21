@@ -221,7 +221,7 @@ namespace UnityEditor
         /// </summary>
         public static Quaternion Slerp(Quaternion p, Quaternion q, float t)
         {
-            Quaternion ret;
+            Quaternion ret = Quaternion.identity;
 
             float fCos = Quaternion.Dot(p, q);
 

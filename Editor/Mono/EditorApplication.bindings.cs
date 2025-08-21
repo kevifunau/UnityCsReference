@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
+using Script.UnrealCSharp;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -77,10 +78,21 @@ namespace UnityEditor
         public static void SaveAssets() {}
 
         // Is editor currently in play mode?
-        public static extern bool isPlaying
+        private static bool _isPlaying;
+        public static bool isPlaying
         {
-            get;
-            set;
+            get
+            {
+                return _isPlaying;
+            }
+            set
+            {
+                _isPlaying = value;
+                if (!value)
+                {
+                    UGUSDUiUtil.GetInstance().ExitGameU3();
+                }
+            }
         }
 
         public static void EnterPlaymode()

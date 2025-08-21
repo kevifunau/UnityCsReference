@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Script.Engine;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 
@@ -15,13 +16,29 @@ namespace UnityEngine
         // Enabled Behaviours are Updated, disabled Behaviours are not.
         [RequiredByNativeCode] // GetFixedBehaviourManager is directly used by fixed update in the player loop
         [NativeProperty]
-        extern public bool enabled { get; set; }
+        public virtual bool enabled
+        {
+            get
+            {
+                return u1Component.PrimaryComponentTick.bCanEverTick;
+            }
+            set
+            {
+                // gameObject.SetActive(value);
+                // u1Component.SetComponentTickEnabled(value);
+                // u1Component.SetVisibility(value);
+                u1Component.SetActive(value, true);
+            }
+        }
 
         [NativeProperty]
-        extern public bool isActiveAndEnabled
+        public bool isActiveAndEnabled
         {
             [NativeMethod("IsAddedToManager")]
-            get;
+            get
+            {
+                return enabled && gameObject.active;
+            }
         }
     }
 }

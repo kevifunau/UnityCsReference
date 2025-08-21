@@ -5,6 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using GUSD.Utils;
+using Script.CoreUObject;
+using Script.Engine;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Scripting;
@@ -30,10 +33,29 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
     public partial class Renderer : Component
     {
-        extern public Bounds bounds
+        public Bounds bounds
         {
-            [FreeFunction(Name = "RendererScripting::GetWorldBounds", HasExplicitThis = true)] get;
-            [NativeName("SetWorldAABB")] set;
+            //[FreeFunction(Name = "RendererScripting::GetWorldBounds", HasExplicitThis = true)]
+            get
+            {
+                UStaticMeshComponent MeshComp  = (UStaticMeshComponent)owner.GetComponentByClass(UStaticMeshComponent.StaticClass());
+                FVector min = new FVector();
+                FVector max = new FVector();
+				//Get axis aligned bounding box
+                MeshComp.GetLocalBounds(ref min, ref max);
+                // Calculation center point
+                var center = U3VectorUtil.GetU3PositionFromU1(min + max * 0.5f);
+                // calculated size
+                var size = U3VectorUtil.GetU3PositionFromU1(max - min);
+                Bounds b = new Bounds(center, size);
+                b.actor = owner;
+                return b;
+            }
+            //[NativeName("SetWorldAABB")]
+            set
+            {
+                
+            }
         }
         extern public Bounds localBounds
         {
@@ -73,7 +95,20 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/Renderer.h")]
     public partial class Renderer : Component
     {
-        extern public bool enabled   { get; set; }
+        public bool enabled  
+        {
+            get
+            {
+                UStaticMeshComponent meshComp = GameObject.GetU1ChildComponent<UStaticMeshComponent>(u1Component);
+                return meshComp.IsVisible();
+            }
+            set
+            {
+                UStaticMeshComponent meshComp = GameObject.GetU1ChildComponent<UStaticMeshComponent>(u1Component);
+                meshComp.SetVisibility(value);
+            } 
+        }
+        
         extern public bool isVisible {[NativeName("IsVisibleInScene")] get; }
 
         extern public ShadowCastingMode shadowCastingMode { get; set; }
@@ -298,71 +333,7 @@ namespace UnityEngine
         extern private void AddPositionsWithNativeContainer(IntPtr positions, int length);
     }
 
-    [NativeHeader("Runtime/Graphics/LineRenderer.h")]
-    public sealed partial class LineRenderer : Renderer
-    {
-        extern public float startWidth          { get; set; }
-        extern public float endWidth            { get; set; }
-        extern public float widthMultiplier     { get; set; }
-        extern public int   numCornerVertices   { get; set; }
-        extern public int   numCapVertices      { get; set; }
-        extern public bool  useWorldSpace       { get; set; }
-        extern public bool  loop                { get; set; }
 
-        extern public Color startColor          { get; set; }
-        extern public Color endColor            { get; set; }
-
-        [NativeProperty("PositionsCount")] extern public int positionCount { get; set; }
-        extern public void SetPosition(int index, Vector3 position);
-        extern public Vector3 GetPosition(int index);
-
-        extern public Vector2 textureScale      { get; set; }
-        extern public float shadowBias          { get; set; }
-
-        extern public bool generateLightingData { get; set; }
-
-        extern public LineTextureMode textureMode { get; set; }
-        extern public LineAlignment   alignment   { get; set; }
-        extern public SpriteMaskInteraction maskInteraction { get; set; }
-
-        extern public void Simplify(float tolerance);
-
-        public void BakeMesh(Mesh mesh, bool useTransform = false) { BakeMesh(mesh, Camera.main, useTransform); }
-        extern public void BakeMesh([NotNull] Mesh mesh, [NotNull] Camera camera, bool useTransform = false);
-
-        public AnimationCurve widthCurve    { get { return GetWidthCurveCopy(); }    set { SetWidthCurve(value); } }
-        public Gradient       colorGradient { get { return GetColorGradientCopy(); } set { SetColorGradient(value); } }
-
-        // these are direct glue to TrailRenderer methods to simplify properties code (and have null checks generated)
-
-        extern private AnimationCurve GetWidthCurveCopy();
-        extern private void SetWidthCurve([NotNull] AnimationCurve curve);
-
-        extern private Gradient GetColorGradientCopy();
-        extern private void SetColorGradient([NotNull] Gradient curve);
-    }
-
-    [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
-    public sealed partial class LineRenderer : Renderer
-    {
-        [FreeFunction(Name = "LineRendererScripting::GetPositions", HasExplicitThis = true)]
-        extern public int GetPositions([NotNull][Out] Vector3[] positions);
-
-        [FreeFunction(Name = "LineRendererScripting::SetPositions", HasExplicitThis = true)]
-        extern public void SetPositions([NotNull] Vector3[] positions);
-
-        public void SetPositions(NativeArray<Vector3> positions) { unsafe { SetPositionsWithNativeContainer((IntPtr)positions.GetUnsafeReadOnlyPtr(), positions.Length); } }
-        public void SetPositions(NativeSlice<Vector3> positions) { unsafe { SetPositionsWithNativeContainer((IntPtr)positions.GetUnsafeReadOnlyPtr(), positions.Length); } }
-
-        public int GetPositions([Out] NativeArray<Vector3> positions) { unsafe { return GetPositionsWithNativeContainer((IntPtr)positions.GetUnsafePtr(), positions.Length); } }
-        public int GetPositions([Out] NativeSlice<Vector3> positions) { unsafe { return GetPositionsWithNativeContainer((IntPtr)positions.GetUnsafePtr(), positions.Length); } }
-
-        [FreeFunction(Name = "LineRendererScripting::SetPositionsWithNativeContainer", HasExplicitThis = true)]
-        extern private void SetPositionsWithNativeContainer(IntPtr positions, int count);
-
-        [FreeFunction(Name = "LineRendererScripting::GetPositionsWithNativeContainer", HasExplicitThis = true)]
-        extern private int GetPositionsWithNativeContainer(IntPtr positions, int length);
-    }
 
     [NativeHeader("Runtime/Graphics/Mesh/SkinnedMeshRenderer.h"), RequiredByNativeCode /* used by VisualEffect, returns type */]
     public partial class SkinnedMeshRenderer : Renderer
@@ -409,20 +380,6 @@ namespace UnityEngine
         extern GraphicsBuffer GetPreviousVertexBufferImpl();
 
         public extern GraphicsBuffer.Target vertexBufferTarget { get; set; }
-    }
-
-    [NativeHeader("Runtime/Graphics/Mesh/MeshRenderer.h")]
-    public partial class MeshRenderer : Renderer
-    {
-        [RequiredByNativeCode]  // MeshRenderer is used in the VR Splash screen.
-        private void DontStripMeshRenderer() {}
-
-        extern public Mesh additionalVertexStreams { get; set; }
-        extern public Mesh enlightenVertexStream { get; set; }
-        extern public int subMeshStartIndex {[NativeName("GetSubMeshStartIndex")] get; }
-        extern public float scaleInLightmap { get; set; }
-        extern public ReceiveGI receiveGI { get; set; }
-        extern public bool stitchLightmapSeams { get; set; }
     }
 
     [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]

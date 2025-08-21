@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Script.CoreUObject;
 using UnityEngine.Scripting;
 using UnityEngine.Serialization;
 
@@ -450,8 +451,9 @@ namespace UnityEngine.Events
 
         public BaseInvokableCall GetRuntimeCall(UnityEventBase theEvent)
         {
-            if (m_CallState == UnityEventCallState.RuntimeOnly && (target != null ? !Application.IsPlaying(target) : !Application.isPlaying))
-                return null;
+            // TODO：这里注释掉是因为Application.IsPlaying(target)和Application.isPlaying没有适配，后续适配了可以解开
+            // if (m_CallState == UnityEventCallState.RuntimeOnly && (target != null ? !Application.IsPlaying(target) : !Application.isPlaying))
+            //     return null;
             if (m_CallState == UnityEventCallState.Off || theEvent == null)
                 return null;
 
@@ -491,8 +493,10 @@ namespace UnityEngine.Events
         {
             var type = typeof(Object);
             if (!string.IsNullOrEmpty(arguments.unityObjectArgumentAssemblyTypeName))
-                type = Type.GetType(arguments.unityObjectArgumentAssemblyTypeName, false) ?? typeof(Object);
-
+            {
+                if (arguments.unityObjectArgument != null) type = arguments.unityObjectArgument.GetType();
+                else type = Type.GetType(arguments.unityObjectArgumentAssemblyTypeName, false) ?? typeof(Object);
+            }
             var generic = typeof(CachedInvokableCall<>);
             var specific = generic.MakeGenericType(type);
             var ci = specific.GetConstructor(new[] { typeof(Object), typeof(MethodInfo), type});
@@ -778,8 +782,10 @@ namespace UnityEngine.Events
         {
             var type = typeof(Object);
             if (!string.IsNullOrEmpty(call.arguments.unityObjectArgumentAssemblyTypeName))
-                type = Type.GetType(call.arguments.unityObjectArgumentAssemblyTypeName, false) ?? typeof(Object);
-
+            {
+                if (call.arguments.unityObjectArgument != null) type = call.arguments.unityObjectArgument.GetType();
+                else type = Type.GetType(call.arguments.unityObjectArgumentAssemblyTypeName, false) ?? typeof(Object);
+            }
             var targetType = call.target != null ? call.target.GetType() : Type.GetType(call.targetAssemblyTypeName, false);
             return FindMethod(call.methodName, targetType, call.mode, type);
         }

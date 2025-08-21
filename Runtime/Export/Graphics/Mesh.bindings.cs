@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Script.UnrealCSharp;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
@@ -22,7 +23,8 @@ namespace UnityEngine
         [RequiredByNativeCode] // Used by IMGUI (even on empty projects, it draws development console & watermarks)
         public Mesh()
         {
-            Internal_Create(this);
+            //Internal_Create(this);
+            
         }
 
         [FreeFunction("MeshScripting::MeshFromInstanceId")] extern internal static Mesh FromInstanceID(int id);
@@ -267,7 +269,14 @@ namespace UnityEngine
         extern public   bool isReadable {[NativeMethod("GetIsReadable")] get; }
         extern internal bool canAccess  {[NativeMethod("CanAccessFromScript")] get; }
 
-        extern public int vertexCount   {[NativeMethod("GetVertexCount")] get; }
+        public int vertexCount
+        {
+            [NativeMethod("GetVertexCount")]
+            get
+            {
+                return AGUSDMeshUtil.GetNumVerticesUtil(actor);
+            }
+        }
         extern public int subMeshCount
         {
             [NativeMethod(Name = "GetSubMeshCount")] get;

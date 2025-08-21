@@ -43,7 +43,10 @@ namespace UnityEngine
         private extern void Internal_Use();
 
         [FreeFunction("GUIEvent::Internal_Create", IsThreadSafe = true)]
-        private static extern IntPtr Internal_Create(int displayIndex);
+        private static IntPtr Internal_Create(int displayIndex)
+        {
+            return IntPtr.Zero;
+        }
 
         [FreeFunction("GUIEvent::Internal_Destroy", IsThreadSafe = true)]
         private static extern void Internal_Destroy(IntPtr ptr);

@@ -36,34 +36,7 @@ namespace UnityEngine
         [Obsolete("Use textureCoord2 instead. (UnityUpgradable) -> textureCoord2")]
         public Vector2 textureCoord1 { get { return textureCoord2;  } }
     }
-
-    public partial class Rigidbody
-    {
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("The sleepVelocity is no longer supported. Use sleepThreshold. Note that sleepThreshold is energy but not velocity.", true)]
-        public float sleepVelocity { get { return 0; } set {} }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("The sleepAngularVelocity is no longer supported. Use sleepThreshold to specify energy.", true)]
-        public float sleepAngularVelocity { get { return 0; } set {} }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Use Rigidbody.maxAngularVelocity instead.")]
-        public void SetMaxAngularVelocity(float a) { maxAngularVelocity = a; }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Cone friction is no longer supported.", true)]
-        public bool useConeFriction { get { return false; } set {} }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Please use Rigidbody.solverIterations instead. (UnityUpgradable) -> solverIterations")]
-        public int solverIterationCount { get { return solverIterations; } set { solverIterations = value; } }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Please use Rigidbody.solverVelocityIterations instead. (UnityUpgradable) -> solverVelocityIterations")]
-        public int solverVelocityIterationCount { get { return solverVelocityIterations; } set { solverVelocityIterations = value; } }
-    }
-
+    
     public partial class MeshCollider
     {
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]

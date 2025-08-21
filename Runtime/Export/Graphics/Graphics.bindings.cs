@@ -17,7 +17,11 @@ using UnityEngine.Experimental.Rendering;
 using Unity.Collections;
 using Unity.Jobs;
 using System.Globalization;
+using Script.CoreUObject;
+using Script.Engine;
+using Script.UnrealCSharp;
 using RequiredMember = UnityEngine.Scripting.RequiredMemberAttribute;
+
 namespace UnityEngine
 {
     [NativeContainer]
@@ -266,9 +270,22 @@ namespace UnityEngine
     [StaticAccessor("GetScreenManager()", StaticAccessorType.Dot)]
     internal sealed class EditorScreen
     {
-        extern public static int   width  {[NativeMethod(Name = "GetWidth",  IsThreadSafe = true)] get; }
-        extern public static int   height {[NativeMethod(Name = "GetHeight", IsThreadSafe = true)] get; }
-        extern public static float dpi    {[NativeName("GetDPI")] get; }
+        public static int width
+        {
+            get
+            {
+                return UTextureUtils.GetScreenSize().Width;
+            }
+        }
+
+        public static int height
+        {
+            get
+            {
+                return UTextureUtils.GetScreenSize().Height;
+            }
+        }
+        public static float dpi => UGUSDScreenUtil.GetDpi();
 
         extern private static void RequestOrientation(ScreenOrientation orient);
         extern private static ScreenOrientation GetScreenOrientation();
@@ -288,7 +305,13 @@ namespace UnityEngine
                 RequestOrientation(value);
             }
         }
-        [NativeProperty("ScreenTimeout")] extern public static int sleepTimeout { get; set; }
+
+        // [NativeProperty("ScreenTimeout")]
+        public static int sleepTimeout
+        {
+            get => UGUSDScreenUtil.IsScreensaverEnabled() ? SleepTimeout.SystemSetting : SleepTimeout.NeverSleep;
+            set => UGUSDScreenUtil.SetScreensaver(SleepTimeout.SystemSetting == value);
+        }
 
         [NativeName("GetIsOrientationEnabled")] extern private static bool IsOrientationEnabled(EnabledOrientation orient);
         [NativeName("SetIsOrientationEnabled")] extern private static void SetOrientationEnabled(EnabledOrientation orient, bool enabled);
@@ -314,15 +337,34 @@ namespace UnityEngine
             set { SetOrientationEnabled(EnabledOrientation.kAutorotateToLandscapeRight, value); }
         }
 
-        extern public static Resolution currentResolution { get; }
-        extern public static bool fullScreen {[NativeName("IsFullscreen")] get; [NativeName("RequestSetFullscreenFromScript")] set; }
+        public static Resolution currentResolution
+        {
+            get
+            {
+                FIntPoint fIntPoint = UGUSDScreenUtil.GetResolution();
+                Resolution resolution = new Resolution();
+                resolution.width = fIntPoint.X;
+                resolution.height = fIntPoint.Y;
+                resolution.refreshRate = UGUSDScreenUtil.GetRefreshRate();;
+                return resolution;
+            }
+        }
+        public static bool fullScreen
+        {
+            get => UGUSDScreenUtil.IsFullScreen();
+            set => UGUSDScreenUtil.SetFullScreen(value);
+        }
         extern public static FullScreenMode fullScreenMode {[NativeName("GetFullscreenMode")] get; [NativeName("RequestSetFullscreenModeFromScript")] set; }
 
         extern public static Rect safeArea { get; }
         extern public static Rect[] cutouts {[FreeFunction("ScreenScripting::GetCutouts")] get; }
 
-        [NativeName("RequestResolution")]
-        extern public static void SetResolution(int width, int height, FullScreenMode fullscreenMode, RefreshRate preferredRefreshRate);
+        // [NativeName("RequestResolution")]
+        public static void SetResolution(int width, int height, FullScreenMode fullscreenMode,
+            RefreshRate preferredRefreshRate)
+        {
+            UGUSDScreenUtil.SetResolutionAndRefreshRate(width, height, fullscreenMode == FullScreenMode.FullScreenWindow, (int)preferredRefreshRate.value);
+        }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("SetResolution(int, int, FullScreenMode, int) is obsolete. Use SetResolution(int, int, FullScreenMode, RefreshRate) instead.")]
@@ -908,7 +950,12 @@ namespace UnityEngine
     [StaticAccessor("GeometryUtilityScripting", StaticAccessorType.DoubleColon)]
     public sealed partial class GeometryUtility
     {
-        extern public static bool TestPlanesAABB(Plane[] planes, Bounds bounds);
+        public static bool TestPlanesAABB(Plane[] planes, Bounds bounds)
+        {
+		//First, use rendering visibility instead of bounding box judgment
+		//and then switch to a more accurate implementation
+            return bounds.actor.WasRecentlyRendered();
+        }
 
         [NativeName("ExtractPlanes")]   extern private static void Internal_ExtractPlanes([Out] Plane[] planes, Matrix4x4 worldToProjectionMatrix);
         [NativeName("CalculateBounds")] extern private static Bounds Internal_CalculateBounds(Vector3[] positions, Matrix4x4 transform);

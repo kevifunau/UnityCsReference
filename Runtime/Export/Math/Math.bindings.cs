@@ -4,6 +4,9 @@
 
 using System;
 using System.Runtime.InteropServices;
+using GUSD.Utils;
+using Script.CoreUObject;
+using Script.UnrealCSharp;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using uei = UnityEngine.Internal;
@@ -82,21 +85,162 @@ namespace UnityEngine
     [UsedByNativeCode]
     public partial struct Quaternion
     {
-        [FreeFunction("FromToQuaternionSafe", IsThreadSafe = true)] extern public static Quaternion FromToRotation(Vector3 fromDirection, Vector3 toDirection);
-        [FreeFunction(IsThreadSafe = true)] extern public static Quaternion Inverse(Quaternion rotation);
+        public static Quaternion FromToRotation(Vector3 fromDirection, Vector3 toDirection)
+        {
+            var u1From = U3VectorUtil.GetU1DirectionFromU3(fromDirection);
+            var u1To = U3VectorUtil.GetU1DirectionFromU3(toDirection);
+            var quat = FQuat.FindBetween(u1From, u1To);
+            return U3QuaternionUtil.ConvertU1QuatToU3(quat);
+        }
+        
+        [FreeFunction(IsThreadSafe = true)]
+        public static Quaternion Inverse(Quaternion rotation)
+        {
+            // 四元数的逆 = 共轭四元数 / 模长的平方（单位四元数可忽略分母）
+            float norm = rotation.x * rotation.x +
+                         rotation.y * rotation.y +
+                         rotation.z * rotation.z +
+                         rotation.w * rotation.w;
 
-        [FreeFunction("QuaternionScripting::Slerp", IsThreadSafe = true)]          extern public static Quaternion Slerp(Quaternion a, Quaternion b, float t);
-        [FreeFunction("QuaternionScripting::SlerpUnclamped", IsThreadSafe = true)] extern public static Quaternion SlerpUnclamped(Quaternion a, Quaternion b, float t);
-        [FreeFunction("QuaternionScripting::Lerp", IsThreadSafe = true)]           extern public static Quaternion Lerp(Quaternion a, Quaternion b, float t);
-        [FreeFunction("QuaternionScripting::LerpUnclamped", IsThreadSafe = true)]  extern public static Quaternion LerpUnclamped(Quaternion a, Quaternion b, float t);
+            // 避免除以零（理论上单位四元数 norm=1）
+            if (norm > 0.0001f)
+            {
+                float invNorm = 1.0f / norm;
+                var r = new Quaternion(
+                    -rotation.x * invNorm,
+                    -rotation.y * invNorm,
+                    -rotation.z * invNorm,
+                    rotation.w * invNorm
+                );
+                var fQuat = new FQuat(r.x, r.y, r.z, r.w);
+                return U3QuaternionUtil.ConvertU1QuatToU3(fQuat);
+            }
+            else
+            {
+                // 非法四元数，返回单位四元数
+                return identity;
+            }
+        }
 
-        [FreeFunction("EulerToQuaternion", IsThreadSafe = true)] extern private static Quaternion Internal_FromEulerRad(Vector3 euler);
-        [FreeFunction("QuaternionScripting::ToEuler", IsThreadSafe = true)] extern private static Vector3 Internal_ToEulerRad(Quaternion rotation);
-        [FreeFunction("QuaternionScripting::ToAxisAngle", IsThreadSafe = true)] extern private static void Internal_ToAxisAngleRad(Quaternion q, out Vector3 axis, out float angle);
-        [FreeFunction("QuaternionScripting::AngleAxis", IsThreadSafe = true)] extern public static Quaternion AngleAxis(float angle, Vector3 axis);
+        public static Quaternion Slerp(Quaternion a, Quaternion b, float t)
+        {
+            var u1Qua = FQuat.Slerp(
+                U3QuaternionUtil.ConvertU3QuatToU1(a),
+                U3QuaternionUtil.ConvertU3QuatToU1(b),
+                t);
+            return U3QuaternionUtil.ConvertU1QuatToU3(u1Qua);
+        }
 
-        [FreeFunction("QuaternionScripting::LookRotation", IsThreadSafe = true)] extern public static Quaternion LookRotation(Vector3 forward, [uei.DefaultValue("Vector3.up")] Vector3 upwards);
-        [uei.ExcludeFromDocs] public static Quaternion LookRotation(Vector3 forward) { return LookRotation(forward, Vector3.up); }
+        [FreeFunction("QuaternionScripting::SlerpUnclamped", IsThreadSafe = true)]
+        extern public static Quaternion SlerpUnclamped(Quaternion a, Quaternion b, float t);
+
+        public static Quaternion Lerp(Quaternion a, Quaternion b, float t)
+        {
+            var u1Qua = FQuat.FastLerp(
+                U3QuaternionUtil.ConvertU3QuatToU1(a),
+                U3QuaternionUtil.ConvertU3QuatToU1(b),
+                t);
+            return U3QuaternionUtil.ConvertU1QuatToU3(u1Qua);
+        }
+
+        [FreeFunction("QuaternionScripting::LerpUnclamped", IsThreadSafe = true)]
+        extern public static Quaternion LerpUnclamped(Quaternion a, Quaternion b, float t);
+        
+        private static Quaternion Internal_FromEulerRad(Vector3 euler)
+        {
+            float x = NormalizeAngle(euler.x);
+            float y = NormalizeAngle(euler.y);
+            float z = NormalizeAngle(euler.z);
+            
+            const float GIMBAL_LOCK_THRESHOLD = 1.569f; 
+            if (Mathf.Abs(x) > GIMBAL_LOCK_THRESHOLD)
+            {
+                return HandleGimbalLock(x, y, z);
+            }
+            
+            float sinX = Mathf.Sin(x * 0.5f);
+            float cosX = Mathf.Cos(x * 0.5f);
+            float sinY = Mathf.Sin(y * 0.5f);
+            float cosY = Mathf.Cos(y * 0.5f);
+            float sinZ = Mathf.Sin(z * 0.5f);
+            float cosZ = Mathf.Cos(z * 0.5f);
+            
+            return new Quaternion(
+                cosY * sinX * cosZ + sinY * cosX * sinZ,  // x
+                sinY * cosX * cosZ - cosY * sinX * sinZ,  // y
+                cosY * cosX * sinZ - sinY * sinX * cosZ,  // z
+                cosY * cosX * cosZ + sinY * sinX * sinZ   // w
+            );
+        }
+        
+        private static float NormalizeAngle(float angleRad)
+        {
+            angleRad = angleRad % (2 * Mathf.PI);
+            if (angleRad < -Mathf.PI) angleRad += 2 * Mathf.PI;
+            if (angleRad > Mathf.PI) angleRad -= 2 * Mathf.PI;
+            return angleRad;
+        }
+        
+        private static Quaternion HandleGimbalLock(float x, float y, float z)
+        {
+            float combinedAngle = y + z;
+            
+            float halfX = Mathf.Sign(x) * Mathf.PI / 4;
+            float halfCombined = combinedAngle * 0.5f;
+            
+            float sinX = Mathf.Sin(halfX);
+            float cosX = Mathf.Cos(halfX);
+            float sinC = Mathf.Sin(halfCombined);
+            float cosC = Mathf.Cos(halfCombined);
+            
+            return new Quaternion(
+                sinX * cosC,
+                cosX * sinC,
+                cosX * sinC,
+                cosX * cosC
+            );
+        }
+
+        [FreeFunction("QuaternionScripting::ToEuler", IsThreadSafe = true)]
+        private static Vector3 Internal_ToEulerRad(Quaternion rotation)
+        {
+            float x = rotation.x, y = rotation.y, z = rotation.z, w = rotation.w;
+            float sinY = 2 * (w * y - z * x);
+            sinY = Mathf.Clamp(sinY, -1, 1);
+
+            Vector3 euler;
+            euler.y = Mathf.Asin(sinY);
+
+            if (Mathf.Abs(sinY) < 0.99999f) {
+                euler.x = Mathf.Atan2(2 * (w * x + y * z), 1 - 2 * (x * x + y * y));
+                euler.z = Mathf.Atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z));
+            } else {
+                euler.x = Mathf.Atan2(2 * (y * z - w * x), 1 - 2 * (x * x + z * z));
+                euler.z = 0;
+            }
+            return euler;
+        }
+
+        [FreeFunction("QuaternionScripting::ToAxisAngle", IsThreadSafe = true)]
+        extern private static void Internal_ToAxisAngleRad(Quaternion q, out Vector3 axis, out float angle);
+
+        [FreeFunction("QuaternionScripting::AngleAxis", IsThreadSafe = true)]
+        extern public static Quaternion AngleAxis(float angle, Vector3 axis);
+
+        public static Quaternion LookRotation(Vector3 forward, [uei.DefaultValue("Vector3.up")] Vector3 upwards)
+        {
+            FVector u1Forward = U3VectorUtil.GetU1DirectionFromU3(forward);
+            FVector u1Up = U3VectorUtil.GetU1DirectionFromU3(upwards);
+            FRotator r = new FRotator();
+            AGUSDMathUtil.MakeRotationFromForwardAndUpVector(u1Forward, u1Up, ref r);
+            return U3QuaternionUtil.ConvertU1QuatToU3(r.Quaternion());
+        }
+
+        [uei.ExcludeFromDocs]
+        public static Quaternion LookRotation(Vector3 forward)
+        {
+            return LookRotation(forward, Vector3.up);
+        }
     }
 
     [NativeType(Header = "Runtime/Geometry/AABB.h")]
@@ -105,7 +249,17 @@ namespace UnityEngine
     [NativeHeader("Runtime/Geometry/Intersection.h")]
     public partial struct Bounds
     {
-        [NativeMethod("IsInside", IsThreadSafe = true)] extern public bool Contains(Vector3 point);
+        [NativeMethod("IsInside", IsThreadSafe = true)] 
+        public bool Contains(Vector3 point) {
+            // 直接使用 min 和 max 属性
+            Vector3 minPoint = min;
+            Vector3 maxPoint = max;
+    
+            // 检查点是否在所有维度上都位于边界内（包含边界）
+            return (point.x >= minPoint.x) && (point.x <= maxPoint.x) &&
+                   (point.y >= minPoint.y) && (point.y <= maxPoint.y) &&
+                   (point.z >= minPoint.z) && (point.z <= maxPoint.z);
+        }
         [FreeFunction("BoundsScripting::SqrDistance", HasExplicitThis = true, IsThreadSafe = true)] extern public float SqrDistance(Vector3 point);
         [FreeFunction("IntersectRayAABB", IsThreadSafe = true)] extern static private bool IntersectRayAABB(Ray ray, Bounds bounds, out float dist);
         [FreeFunction("BoundsScripting::ClosestPoint", HasExplicitThis = true, IsThreadSafe = true)] extern public Vector3 ClosestPoint(Vector3 point);

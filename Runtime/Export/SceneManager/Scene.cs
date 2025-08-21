@@ -40,16 +40,21 @@ namespace UnityEngine.SceneManagement
             return IsValidInternal(handle);
         }
 
-        public string path
+        public string path = string.Empty;
+		/*
         {
             get { return GetPathInternal(handle); }
         }
+		*/
 
-        public string name
+        public string name = "defaultScene";
+        /*
         {
             get { return GetNameInternal(handle); }
             set { SetNameInternal(handle, value); }
         }
+        */
+        
 
         public bool isLoaded
         {

@@ -12,6 +12,9 @@ using AmbientMode = UnityEngine.Rendering.AmbientMode;
 using ReflectionMode = UnityEngine.Rendering.DefaultReflectionMode;
 using System.Collections.Generic;
 using System.Linq;
+using Script.CoreUObject;
+using Script.Engine;
+using Script.UnrealCSharp;
 using UnityEngine.Assertions;
 
 namespace UnityEngine
@@ -37,12 +40,77 @@ namespace UnityEngine
     {
         private RenderSettings() {}
 
-        [NativeProperty("UseFog")]         extern public static bool  fog              { get; set; }
-        [NativeProperty("LinearFogStart")] extern public static float fogStartDistance { get; set; }
-        [NativeProperty("LinearFogEnd")]   extern public static float fogEndDistance   { get; set; }
-        extern public static FogMode fogMode    { get; set; }
-        extern public static Color   fogColor   { get; set; }
-        extern public static float   fogDensity { get; set; }
+        private static AGUSDFogUtil agusdFogUtilInstance;
+        
+        static AGUSDFogUtil GetAgusdFogUtilInstance()
+        {
+            if (agusdFogUtilInstance == null)
+            {
+                agusdFogUtilInstance = AGUSDFogUtil.GetAGUSDFogUtilInstance();
+            }
+
+            return agusdFogUtilInstance;
+        }
+
+        private static AExponentialHeightFog fogActor = GetAgusdFogUtilInstance().FogActor;
+        
+
+        [NativeProperty("UseFog")]         
+        public static bool fog {
+            get
+            {
+                return fogActor != null && fogActor.Component.bVisible;
+            }
+            set
+            {
+                if (fogActor != null)
+                {
+                    fogActor.Component.bVisible = value;
+                }
+                else if(value)
+                {
+                    GetAgusdFogUtilInstance().SetFogEnable(true);
+                    fogActor = GetAgusdFogUtilInstance().FogActor;
+                }
+            }
+        }
+        [NativeProperty("LinearFogStart")] 
+        public static float fogStartDistance {
+            set
+            {
+                GetAgusdFogUtilInstance().SetFogStart(value * 100.0f);
+            }
+        }
+        [NativeProperty("LinearFogEnd")]   
+        public static float fogEndDistance   {
+            set
+            {
+                GetAgusdFogUtilInstance().SetFogEnd(value * 100);
+            }
+        }
+        public static FogMode fogMode    {
+            get
+            {
+                FogMode? nullableFogMode = GetAgusdFogUtilInstance().GetEFogMode() as FogMode?;
+                return nullableFogMode ?? FogMode.Linear;
+            }
+            set
+            {
+                GetAgusdFogUtilInstance().SetFogMode((int)value);
+            }
+        }
+        public static Color fogColor{
+            set
+            {
+                GetAgusdFogUtilInstance().SetFogColor(new FLinearColor(value.r, value.g, value.b, value.a));
+            }
+        }
+        public static float fogDensity{
+            set
+            {
+                GetAgusdFogUtilInstance().SetFogDensity(value);
+            }
+        }
 
         extern public static AmbientMode ambientMode   { get; set; }
         extern public static Color ambientSkyColor     { get; set; }
@@ -162,22 +230,78 @@ namespace UnityEngine
 
         extern public static int pixelLightCount { get; set; }
 
-        [NativeProperty("ShadowQuality")] extern public static ShadowQuality shadows { get; set; }
+        [NativeProperty("ShadowQuality")] public static ShadowQuality shadows {
+            get
+            {
+                // 获取阴影是否启用
+                return UUEQualitySettings.GetShadowsEnabled() ? ShadowQuality.All : ShadowQuality.Disable;
+            }
+            set
+            {
+                // 设置阴影开关状态
+                UUEQualitySettings.SetShadowsEnabled(value != ShadowQuality.Disable);
+            }
+            
+        }
         extern public static ShadowProjection shadowProjection      { get; set; }
         extern public static int              shadowCascades        { get; set; }
         extern public static float            shadowDistance        { get; set; }
-        [NativeProperty("ShadowResolution")] extern public static ShadowResolution shadowResolution      { get; set; }
-        [NativeProperty("ShadowmaskMode")] extern public static ShadowmaskMode   shadowmaskMode        { get; set; }
+        [NativeProperty("ShadowResolution")]
+        public static ShadowResolution shadowResolution {
+            get
+            {
+                // 获取阴影分辨率
+                return (ShadowResolution)UUEQualitySettings.GetShadowResolution();
+            }
+            set
+            {
+                // 设置阴影分辨率
+                UUEQualitySettings.SetShadowResolution((int)value);
+            }
+        }
+        [NativeProperty("ShadowmaskMode")] public static ShadowmaskMode   shadowmaskMode        
+        {
+            get
+            {
+                return (ShadowmaskMode)UUEQualitySettings.GetShadowmaskMode();
+            }
+            set
+            {
+                UUEQualitySettings.SetShadowmaskMode((int)value);
+            } 
+        }
         extern public static float            shadowNearPlaneOffset { get; set; }
         extern public static float            shadowCascade2Split   { get; set; }
         extern public static Vector3          shadowCascade4Split   { get; set; }
 
         [NativeProperty("LODBias")] extern public static float lodBias { get; set; }
-        [NativeProperty("AnisotropicTextures")] extern public static AnisotropicFiltering anisotropicFiltering { get; set; }
+
+        [NativeProperty("AnisotropicTextures")]
+        public static AnisotropicFiltering anisotropicFiltering { 
+            get
+            {
+                return (AnisotropicFiltering)UUEQualitySettings.GetAnisotropicFiltering();
+            }
+            set
+            {
+                UUEQualitySettings.SetAnisotropicFiltering((int)value);
+            }
+        }
 
         [Obsolete("masterTextureLimit has been deprecated. Use globalTextureMipmapLimit instead (UnityUpgradable) -> globalTextureMipmapLimit", false)]
         [NativeProperty("GlobalTextureMipmapLimit")] extern public static int   masterTextureLimit    { get; set; }
-        extern public static int   globalTextureMipmapLimit { get; set; }
+        public static int globalTextureMipmapLimit { 
+            get
+            {
+                // 获取全局Mipmap限制
+                return UUEQualitySettings.GetGlobalTextureMipmapLimit();
+            }
+            set
+            {
+                // 设置全局Mipmap限制
+                UUEQualitySettings.SetGlobalTextureMipmapLimit(value);
+            } 
+        }
         extern public static int   maximumLODLevel       { get; set; }
         extern public static bool  enableLODCrossFade    { get; set; }
         extern public static int   particleRaycastBudget { get; set; }
@@ -185,7 +309,19 @@ namespace UnityEngine
         extern public static bool  softVegetation        { get; set; }
         extern public static int   vSyncCount            { get; set; }
         extern public static int   realtimeGICPUUsage    { get; set; }
-        extern public static int   antiAliasing          { get; set; }
+        public static int antiAliasing { 
+            get
+            {
+                // 获取当前抗锯齿设置
+                return UUEQualitySettings.GetAntiAliasing();
+            }
+            set
+            {
+                // 设置抗锯齿级别 (0=关闭, 1=FXAA, 2=TAA, 3=高)
+                UUEQualitySettings.SetAntiAliasing(value);
+            }
+            
+        }
         extern public static int   asyncUploadTimeSlice  { get; set; }
         extern public static int   asyncUploadBufferSize { get; set; }
         extern public static bool  asyncUploadPersistentBuffer { get; set; }
@@ -259,7 +395,13 @@ namespace UnityEngine
 
         [NativeName("GetCurrentIndex")] extern public static int  GetQualityLevel();
         [FreeFunction] extern public static Object GetQualitySettings();
-        [NativeName("SetCurrentIndex")] extern public static void SetQualityLevel(int index, [uei.DefaultValue("true")] bool applyExpensiveChanges);
+
+        [NativeName("SetCurrentIndex")]
+        public static void SetQualityLevel(int index, [uei.DefaultValue("true")] bool applyExpensiveChanges)
+        {
+            // 调用UE的质量级别设置
+            UUEQualitySettings.SetQualityLevel(index, applyExpensiveChanges);
+        }
 
         [NativeProperty("QualitySettingsNames")] extern public static string[] names { get; }
 

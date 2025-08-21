@@ -16,5 +16,11 @@ namespace UnityEngine
 
         // Creates a yield instruction to wait for a given number of seconds
         public WaitForSeconds(float seconds) { m_Seconds = seconds; }
+
+        public override bool Tick()
+        {
+            m_Seconds -= Time.deltaTime;
+            return m_Seconds <= 0;
+        }
     }
 }

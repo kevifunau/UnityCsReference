@@ -3,10 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngineInternal;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using UnityEngine.SceneManagement;
+using Script.UnrealCSharp;
 
 namespace UnityEngine
 {
@@ -39,7 +41,7 @@ namespace UnityEngine
         // Quits the player application with the default exit code, 0
         public static void Quit()
         {
-            Quit(0);
+            UGUSDUiUtil.GetInstance().ExitGameU3();
         }
 
         // Cancels quitting the application. This is useful for showing a splash screen at the end of a game.
@@ -107,7 +109,7 @@ namespace UnityEngine
         public extern static bool CanStreamedLevelBeLoaded(string levelName);
 
         // Returns true when in any kind of player (RO).
-        public extern static bool isPlaying
+        public static bool isPlaying
         {
             [FreeFunction("IsWorldPlaying")]
             get;
@@ -188,10 +190,12 @@ namespace UnityEngine
         }
 
         // Contains the path to a persistent data directory (RO).
-        extern public static string persistentDataPath
+        public static string persistentDataPath
         {
-            [FreeFunction("GetPersistentDataPathApplicationSpecific")]
-            get;
+            get
+            {
+                return AGUSDFileUtil.GetPersistentDataPathU3().ToString();
+            }
         }
 
         // Contains the path to a temporary data / cache directory (RO).
@@ -425,10 +429,10 @@ namespace UnityEngine
         }
 
         // The language the user's operating system is running in.
-        extern public static SystemLanguage systemLanguage
+        public static SystemLanguage systemLanguage
         {
             [FreeFunction("(SystemLanguage)systeminfo::GetSystemLanguage")]
-            get;
+            get => languageCodeToEnum(UGUSDPlatform.GetSystemLanguage().ToString());
         }
 
         // Returns the type of Internet reachability currently possible on the device.
@@ -436,6 +440,77 @@ namespace UnityEngine
         {
             [FreeFunction("GetInternetReachability")]
             get;
+        }
+
+        private static SystemLanguage languageCodeToEnum(string languageCode)
+        {
+            if (string.IsNullOrEmpty(languageCode))
+            {
+                return SystemLanguage.Unknown;
+            }
+
+            if (languageCode.Contains("zh"))
+            {
+                if (languageCode.Contains("CN") || languageCode.Contains("Hans"))
+                    return SystemLanguage.ChineseSimplified;
+                if (languageCode.Contains("TW") || languageCode.Contains("HK") || languageCode.Contains("Hant"))
+                    return SystemLanguage.ChineseTraditional;
+                return SystemLanguage.Chinese;
+            }
+
+            if (languageCode.Contains("-"))
+            {
+                languageCode = languageCode.Substring(0, languageCode.IndexOf("-", StringComparison.Ordinal));
+            }
+
+            Dictionary<string, SystemLanguage> systemLanguageDict = new Dictionary<string, SystemLanguage>()
+            {
+                { "af", SystemLanguage.Afrikaans },
+                { "ar", SystemLanguage.Arabic },
+                { "eu", SystemLanguage.Basque },
+                { "be", SystemLanguage.Belarusian },
+                { "bg", SystemLanguage.Bulgarian },
+                { "ca", SystemLanguage.Catalan },
+                { "zh", SystemLanguage.Chinese },
+                { "cs", SystemLanguage.Czech },
+                { "da", SystemLanguage.Danish },
+                { "nl", SystemLanguage.Dutch },
+                { "en", SystemLanguage.English },
+                { "et", SystemLanguage.Estonian },
+                { "fo", SystemLanguage.Faroese },
+                { "fi", SystemLanguage.Finnish },
+                { "fr", SystemLanguage.French },
+                { "de", SystemLanguage.German },
+                { "el", SystemLanguage.Greek },
+                { "he", SystemLanguage.Hebrew },
+                { "hu", SystemLanguage.Hungarian },
+                { "is", SystemLanguage.Icelandic },
+                { "id", SystemLanguage.Indonesian },
+                { "it", SystemLanguage.Italian },
+                { "ja", SystemLanguage.Japanese },
+                { "ko", SystemLanguage.Korean },
+                { "lv", SystemLanguage.Latvian },
+                { "lt", SystemLanguage.Lithuanian },
+                { "no", SystemLanguage.Norwegian },
+                { "pl", SystemLanguage.Polish },
+                { "pt", SystemLanguage.Portuguese },
+                { "ro", SystemLanguage.Romanian },
+                { "ru", SystemLanguage.Russian },
+                { "sh", SystemLanguage.SerboCroatian },
+                { "sk", SystemLanguage.Slovak },
+                { "sl", SystemLanguage.Slovenian },
+                { "es", SystemLanguage.Spanish },
+                { "sv", SystemLanguage.Swedish },
+                { "th", SystemLanguage.Thai },
+                { "tr", SystemLanguage.Turkish },
+                { "uk", SystemLanguage.Ukrainian },
+                { "vi", SystemLanguage.Vietnamese },
+                { "zh-Hans", SystemLanguage.ChineseSimplified },
+                { "zh-Hant", SystemLanguage.ChineseTraditional },
+                { "hi", SystemLanguage.Hindi }
+            };
+
+            return systemLanguageDict.GetValueOrDefault(languageCode, SystemLanguage.Unknown);
         }
     }
 }

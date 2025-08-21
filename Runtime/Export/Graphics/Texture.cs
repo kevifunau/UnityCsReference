@@ -4,12 +4,16 @@
 
 using System;
 using System.Collections.Generic;
+using Script.CoreUObject;
+using Script.Engine;
+using Script.UnrealCSharp;
 using uei = UnityEngine.Internal;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Scripting;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Rendering;
+using UTextureRenderTarget2D = Script.Engine.UTextureRenderTarget2D;
 
 namespace UnityEngine
 {
@@ -217,6 +221,7 @@ namespace UnityEngine
 
     public partial class RenderTexture : Texture
     {
+        private UTextureRenderTarget2D targetTexture;
         [RequiredByNativeCode] // used to create builtin textures
         internal protected RenderTexture()
         {
@@ -302,12 +307,13 @@ namespace UnityEngine
         public RenderTexture(int width, int height, int depth)
             : this(width, height, depth, RenderTextureFormat.Default)
         {
+            targetTexture = UTextureUtils.CreateRenderTarget(width, height);
         }
 
         [uei.ExcludeFromDocs]
         public RenderTexture(int width, int height, int depth, RenderTextureFormat format, int mipCount)
         {
-            Initialize(width, height, depth, format, RenderTextureReadWrite.Default, mipCount);
+            // Initialize(width, height, depth, format, RenderTextureReadWrite.Default, mipCount);
         }
 
         private void Initialize(int width, int height, int depth, RenderTextureFormat format, RenderTextureReadWrite readWrite, int mipCount)
@@ -704,6 +710,7 @@ namespace UnityEngine
 
     public partial class Texture2D : Texture
     {
+        public UTextureRenderTarget2D targetTexture = null;
         internal bool ValidateFormat(TextureFormat format, int width, int height)
         {
             bool isValid = ValidateFormat(format);
@@ -770,20 +777,34 @@ namespace UnityEngine
         {
         }
 
+        public UTexture2D ue_texture2D;
         internal Texture2D(int width, int height, TextureFormat textureFormat, int mipCount, bool linear, IntPtr nativeTex, bool createUninitialized, bool ignoreMipmapLimit, string mipmapLimitGroupName)
         {
-            if (!ValidateFormat(textureFormat, width, height))
-                return;
+            ue_texture2D =
+                AGUSDTextureUtil.CreateUTexture2D(width, height, TextureFormatConvertPixelFormat(textureFormat), mipCount, linear, createUninitialized);
+            // if (!ValidateFormat(textureFormat, width, height))
+            //     return;
+            //
+            // GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
+            // TextureCreationFlags flags = (mipCount != 1) ? TextureCreationFlags.MipChain : TextureCreationFlags.None;
+            // if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
+            //     flags |= TextureCreationFlags.Crunch;
+            // if (createUninitialized)
+            //     flags |= TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
+            // if (ignoreMipmapLimit)
+            //     flags |= TextureCreationFlags.IgnoreMipmapLimit;
+            // Internal_Create(this, width, height, mipCount, format, GetTextureColorSpace(linear), flags, nativeTex, mipmapLimitGroupName);
+        }
 
-            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
-            TextureCreationFlags flags = (mipCount != 1) ? TextureCreationFlags.MipChain : TextureCreationFlags.None;
-            if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
-                flags |= TextureCreationFlags.Crunch;
-            if (createUninitialized)
-                flags |= TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
-            if (ignoreMipmapLimit)
-                flags |= TextureCreationFlags.IgnoreMipmapLimit;
-            Internal_Create(this, width, height, mipCount, format, GetTextureColorSpace(linear), flags, nativeTex, mipmapLimitGroupName);
+        private EPixelFormat TextureFormatConvertPixelFormat(TextureFormat format)
+        {
+            switch (format)
+            {
+                case TextureFormat.ARGB32: 
+                    return EPixelFormat.PF_A8R8G8B8;
+                default:
+                    return EPixelFormat.PF_A8R8G8B8;
+            }
         }
 
         public Texture2D(int width, int height, [uei.DefaultValue("TextureFormat.RGBA32")] TextureFormat textureFormat, [uei.DefaultValue("-1")] int mipCount, [uei.DefaultValue("false")] bool linear)
@@ -1089,6 +1110,30 @@ namespace UnityEngine
             CompressZIP = 1 << 1,
             CompressRLE = 1 << 2,
             CompressPIZ = 1 << 3,
+        }
+        
+        public int width
+        {
+            get
+            {
+                return AGUSDTextureUtil.GetUTextureWidth(ue_texture2D);
+            }
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
+        
+        public int height
+        {
+            get
+            {
+                return AGUSDTextureUtil.GetUTextureHeight(ue_texture2D);
+            }
+            set
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 

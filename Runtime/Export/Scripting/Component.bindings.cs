@@ -9,6 +9,9 @@ using UnityEngine.Scripting;
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using Script.Engine;
+using Script.UnrealCSharp;
 
 namespace UnityEngine
 {
@@ -17,16 +20,72 @@ namespace UnityEngine
     [NativeHeader("Runtime/Export/Scripting/Component.bindings.h")]
     public partial class Component : UnityEngine.Object
     {
-        public extern Transform transform
+        public virtual void InitializeCorrespondU1Component()
         {
-            [FreeFunction("GetTransform", HasExplicitThis = true, ThrowsException = true)]
-            get;
+            
+        }
+        
+        public UGUSDBaseComponent u1Component;
+
+        private AActor m_owner;
+        public AActor owner
+        {
+            get
+            {
+                if (m_owner == null)
+                {
+                    USceneComponent attachTo = u1Component.GetAttachParent();
+                    //case1: script attached to normal SceneComponent
+                    if (attachTo == null || !attachTo.IsA<UChildActorComponent>())
+                    {
+                        AActor actor = u1Component.GetOwner();
+                        if (actor == null)
+                        {
+                            // when prefab load is right
+                            Debug.LogWarning("GetOwner is null");
+                        }
+                        m_owner = actor;
+                        return actor;
+                    }
+                    //case2: script attached to UChildActorComponent
+                    m_owner = ((UChildActorComponent)attachTo).ChildActor;
+                }
+                return m_owner;
+            }
         }
 
-        public extern GameObject gameObject
+        private Transform m_transform;
+
+        public Transform transform
         {
-            [FreeFunction("GetGameObject", HasExplicitThis = true)]
-            get;
+            get
+            {
+                if (m_transform == null)
+                {
+                    m_transform = GetComponent<Transform>();
+                }
+                return m_transform;
+            }
+        }
+
+        // Temporary variables for legacy architecture compatibility
+        private GameObject _tmpGameObject;
+        public GameObject gameObject
+        {
+            get
+            {
+                // Since getOwner() will be deprecated in the future, GameObject.GetFromActorOrCreate(owner) will return null. 
+                // Therefore, inject GameObject information during  IL component generation.
+                if (_tmpGameObject == null)
+                {
+                    _tmpGameObject = GameObject.GetFromActorOrCreate(owner);
+                }
+                return _tmpGameObject;
+            }
+            set
+            {
+                _tmpGameObject = value;
+            }
         }
 
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
@@ -41,9 +100,7 @@ namespace UnityEngine
         [System.Security.SecuritySafeCritical]
         public unsafe T GetComponent<T>()
         {
-            var h = new CastHelper<T>();
-            GetComponentFastPath(typeof(T), new System.IntPtr(&h.onePointerFurtherThanT));
-            return h.t;
+            return gameObject.GetComponent<T>();
         }
 
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
@@ -57,7 +114,7 @@ namespace UnityEngine
         {
             return gameObject.TryGetComponent(out component);
         }
-
+        
         [FreeFunction(HasExplicitThis = true)]
         public extern Component GetComponent(string type);
 
@@ -169,7 +226,9 @@ namespace UnityEngine
         }
 
         [FreeFunction(HasExplicitThis = true, ThrowsException = true)]
-        private extern void GetComponentsForListInternal(Type searchType, object resultList);
+        private void GetComponentsForListInternal(Type searchType, object resultList)
+        {
+        }
 
         public void GetComponents(Type type, List<Component> results)
         {
@@ -191,7 +250,7 @@ namespace UnityEngine
         {
             return gameObject.GetComponents<T>();
         }
-
+        
         public extern int GetComponentIndex();
 
         public bool CompareTag(string tag)
@@ -235,8 +294,38 @@ namespace UnityEngine
             SendMessage(methodName, null, SendMessageOptions.RequireReceiver);
         }
 
-        [FreeFunction("SendMessage", HasExplicitThis = true)]
-        public extern void SendMessage(string methodName, object value, SendMessageOptions options);
+        public void SendMessage(string methodName, object value, SendMessageOptions options)
+        {
+            bool methodFound = false;
+            Component[] components = GetComponents(typeof(MonoBehaviour));
+            foreach (var component in components)
+            {
+                if (component == null || !component.owner.IsValid())
+                {
+                    continue;
+                }
+                Type currentType = component.GetType();
+                MethodInfo method = null;
+                if (value == null)
+                {
+                    method = currentType.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                }
+                else
+                {
+                    method = currentType.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+                        [value.GetType()]);
+                }
+                if (method != null)
+                {
+                    method.Invoke(component, value != null ? [value] : null);
+                    methodFound = true;
+                }
+            }
+            if (!methodFound && options == SendMessageOptions.RequireReceiver)
+            {
+                throw new MissingMethodException($"failed to call function: {methodName}");
+            }
+        }
 
         public void SendMessage(string methodName, SendMessageOptions options)
         {
@@ -262,5 +351,7 @@ namespace UnityEngine
         {
             BroadcastMessage(methodName, null, options);
         }
+        
+        public static implicit operator bool(Component obj) => obj != null;
     }
 }

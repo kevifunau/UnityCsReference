@@ -2,6 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Linq;
+using Script.CoreUObject;
+using Script.UnrealCSharp;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
@@ -36,7 +39,12 @@ namespace UnityEngine
         extern public static byte[] EncodeToTGA(this Texture2D tex);
 
         [NativeMethod(Name = "ImageConversionBindings::EncodeToPNG", IsFreeFunction = true, ThrowsException = true)]
-        extern public static byte[] EncodeToPNG(this Texture2D tex);
+        public static byte[] EncodeToPNG(this Texture2D tex)
+        {
+            TArray<byte> tmp = AGUSDTextureUtil.EncodeToPng(tex.ue_texture2D);
+            byte[] array = tmp.ToArray();
+            return array;
+        }
 
         [NativeMethod(Name = "ImageConversionBindings::EncodeToJPG", IsFreeFunction = true, ThrowsException = true)]
         extern public static byte[] EncodeToJPG(this Texture2D tex, int quality);
@@ -53,7 +61,17 @@ namespace UnityEngine
         }
 
         [NativeMethod(Name = "ImageConversionBindings::LoadImage", IsFreeFunction = true)]
-        extern public static bool LoadImage([NotNull] this Texture2D tex, byte[] data, bool markNonReadable);
+        public static bool LoadImage([NotNull] this Texture2D tex, byte[] data, bool markNonReadable)
+        {
+            TArray<byte> bytes = new TArray<byte>();
+            foreach (byte b in data)
+            {
+                bytes.Add(b);
+            }
+
+            tex.ue_texture2D = AGUSDTextureUtil.LoadTextureFromBytes(bytes);
+            return true;
+        }
         public static bool LoadImage(this Texture2D tex, byte[] data)
         {
             return LoadImage(tex, data, false);

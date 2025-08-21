@@ -401,7 +401,12 @@ namespace UnityEngine
 
         [NativeProperty("FontSizeFoundForBestFit", false, TargetType.Function)] public extern int fontSizeUsedForBestFit { get; }
 
-        [NativeMethod(IsThreadSafe = true)] private static extern IntPtr Internal_Create();
+        [NativeMethod(IsThreadSafe = true)]
+        private static IntPtr Internal_Create()
+        {
+            return IntPtr.Zero;
+        }
+
         [NativeMethod(IsThreadSafe = true)] private static extern void Internal_Destroy(IntPtr ptr);
 
         internal extern bool Populate_Internal(

@@ -24,6 +24,10 @@ namespace UnityEngine
         {
             get
             {
+                if (str != null)
+                {
+                    return str;
+                }
                 var localBytes = bytes;
                 return localBytes.Length == 0 ? string.Empty : DecodeString(localBytes);
             }

@@ -3,9 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Script.Engine;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Bindings;
+using System.Collections.Concurrent;
+using Script.CoreUObject;
 using scm = System.ComponentModel;
 using uei = UnityEngine.Internal;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
@@ -92,6 +95,10 @@ namespace UnityEngine.SceneManagement
         public static event UnityAction<Scene> sceneUnloaded;
 
         public static event UnityAction<Scene, Scene> activeSceneChanged;
+        
+        private static ConcurrentDictionary<Scene, ULevel> sence2LevelDictionary = new ConcurrentDictionary<Scene, ULevel>();
+        
+        public static UWorld World => Unreal.GWorld;
 
         [Obsolete("Use SceneManager.sceneCount and SceneManager.GetSceneAt(int index) to loop the all scenes instead.")]
         static public Scene[] GetAllScenes()
@@ -181,6 +188,7 @@ namespace UnityEngine.SceneManagement
 
         public static AsyncOperation LoadSceneAsync(string sceneName, LoadSceneParameters parameters)
         {
+            sceneName = "/Game/Scenes/Scenes/"+sceneName;
             return LoadSceneAsyncNameIndexInternal(sceneName, -1, parameters, false);
         }
 

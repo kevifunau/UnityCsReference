@@ -37,5 +37,10 @@ namespace UnityEngine
         {
             m_WaitUntilTime = -1;
         }
+
+        public override bool Tick()
+        {
+            return !keepWaiting;
+        }
     }
 }

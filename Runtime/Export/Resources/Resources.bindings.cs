@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using UnityEngineInternal;
 using UnityEngine.Bindings;
@@ -152,7 +153,12 @@ namespace UnityEngine
 
         public static Object Load(string path, Type systemTypeInstance)
         {
-            return ResourcesAPI.ActiveAPI.Load(path, systemTypeInstance);
+            string resPath = "Resources/" + path;
+            
+            MethodInfo func = systemTypeInstance.GetMethod("Load", BindingFlags.Public | BindingFlags.Static);
+            if (func != null)
+                return func.Invoke(null, [resPath]) as Object;
+            return null;
         }
 
         public static ResourceRequest LoadAsync(string path)

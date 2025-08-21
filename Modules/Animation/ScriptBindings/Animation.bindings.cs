@@ -5,6 +5,8 @@
 using System;
 using System.Collections;
 using System.Runtime.InteropServices;
+using Script.Dynamic;
+using Script.UnrealCSharp;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using uei = UnityEngine.Internal;
@@ -63,7 +65,7 @@ namespace UnityEngine
         Legacy = 1,
         Animator = 2,
     }
-
+    [U3Exported]
     // The animation component is used to play back animations.
     [NativeHeader("Modules/Animation/Animation.h")]
     public sealed class Animation : Behaviour, IEnumerable
@@ -87,7 +89,12 @@ namespace UnityEngine
 
         [uei.ExcludeFromDocs] public bool Play() { return Play(PlayMode.StopSameLayer); }
         public bool Play([uei.DefaultValue("PlayMode.StopSameLayer")] PlayMode mode) { return PlayDefaultAnimation(mode); }
-        [NativeName("Play")] extern private bool PlayDefaultAnimation(PlayMode mode);
+
+        [NativeName("Play")]
+        private bool PlayDefaultAnimation(PlayMode mode)
+        {
+            return UGUSDAnimationBaseUtil.PlayDefaultAnimation();
+        }
 
         [uei.ExcludeFromDocs] public bool Play(string animation) { return Play(animation, PlayMode.StopSameLayer); }
         extern public bool Play(string animation, [uei.DefaultValue("PlayMode.StopSameLayer")] PlayMode mode);

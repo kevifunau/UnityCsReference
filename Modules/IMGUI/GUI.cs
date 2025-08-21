@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Script.CoreUObject;
+using Script.UnrealCSharp;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
@@ -376,7 +378,11 @@ namespace UnityEngine
 
         public static bool Button(Rect position, string text)
         {
-            return Button(position, GUIContent.Temp(text), s_Skin.button);
+            // TODO 需要优化
+            var pos = new FVector2D(position.x, position.y);
+            var size = new FVector2D(position.width, position.height);
+            return UGUSDGUI.Button(text, pos, size);
+            // return Button(position, GUIContent.Temp(text), s_Skin.button);
         }
 
         public static bool Button(Rect position, Texture image)

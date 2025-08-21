@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using Script.UnrealCSharp;
 using UnityEngine.Internal;
 using UnityEngine.Bindings;
 
@@ -90,7 +91,10 @@ namespace UnityEngine
 
         // Triggers device vibration.
         [FreeFunction("Vibrate")]
-        public static extern void Vibrate();
+        public static void Vibrate()
+        {
+            UGUSDPlatform.Vibrate();
+        }
 
         [Obsolete("Property Handheld.use32BitDisplayBuffer has been deprecated. Modifying it has no effect, use PlayerSettings instead.")]
         public static bool use32BitDisplayBuffer

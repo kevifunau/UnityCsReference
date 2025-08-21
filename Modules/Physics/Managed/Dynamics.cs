@@ -256,6 +256,14 @@ namespace UnityEngine
             m_Flipped = flipped;
         }
 
+        internal Collision(ContactPoint point, Collider thisCollider, Collider otherCollider)
+        {
+            m_Header = new ContactPairHeader();
+            m_Pair = new ContactPair(1, thisCollider, otherCollider); // fixed num 1
+            m_Flipped = false;
+            m_LegacyContacts = [point];
+        }
+
         // Assumes we are in the reusing mode
         internal void Reuse(in ContactPairHeader header, in ContactPair pair)
         {

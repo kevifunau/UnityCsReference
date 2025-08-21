@@ -3,6 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Script.CoreUObject;
+using Script.Engine;
+using Script.UnrealCSharp;
 
 namespace UnityEngine
 {
@@ -21,10 +24,18 @@ namespace UnityEngine
             CalculateFrustumPlanes(worldToProjectionMatrix, planes);
             return planes;
         }
-
+//The sorting order is: left, right, bottom, top, near, far, consistent with Unity
         public static void CalculateFrustumPlanes(Camera camera, Plane[] planes)
         {
-            CalculateFrustumPlanes(camera.projectionMatrix * camera.worldToCameraMatrix, planes);
+            UCameraComponent cameraComp = (UCameraComponent)camera.owner.GetComponentByClass(UCameraComponent.StaticClass());
+            // get camera matrix
+            if (!camera || planes.Length < 6) return;
+            TArray<FPlane> u1FPlanes = AGUSDMiscUtil.CalculateFrustumPlanesDirectly(cameraComp);
+            for (int i = 0; i < planes.Length; i++)
+            {
+                planes[i] = new Plane(u1FPlanes[i]);
+            }
+            //CalculateFrustumPlanes(camera.projectionMatrix * camera.worldToCameraMatrix, planes);
         }
 
         public static void CalculateFrustumPlanes(Matrix4x4 worldToProjectionMatrix, Plane[] planes)

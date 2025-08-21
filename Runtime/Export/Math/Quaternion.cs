@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
 using scm = System.ComponentModel;
 using uei = UnityEngine.Internal;
 using System.Runtime.CompilerServices;
+using GUSD.Utils;
+using Script.CoreUObject;
 
 namespace UnityEngine
 {
@@ -63,7 +65,7 @@ namespace UnityEngine
         // Set x, y, z and w components of an existing Quaternion.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void Set(float newX, float newY, float newZ, float newW)
-        {
+        { 
             x = newX;
             y = newY;
             z = newZ;
@@ -75,22 +77,15 @@ namespace UnityEngine
         // The identity rotation (RO). This quaternion corresponds to "no rotation": the object
         public static Quaternion identity
         {
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-            get
-            {
-                return identityQuaternion;
-            }
+            get { return identityQuaternion; }
         }
 
         // Combines rotations /lhs/ and /rhs/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Quaternion operator*(Quaternion lhs, Quaternion rhs)
         {
-            return new Quaternion(
-                lhs.w * rhs.x + lhs.x * rhs.w + lhs.y * rhs.z - lhs.z * rhs.y,
-                lhs.w * rhs.y + lhs.y * rhs.w + lhs.z * rhs.x - lhs.x * rhs.z,
-                lhs.w * rhs.z + lhs.z * rhs.w + lhs.x * rhs.y - lhs.y * rhs.x,
-                lhs.w * rhs.w - lhs.x * rhs.x - lhs.y * rhs.y - lhs.z * rhs.z);
+            FQuat q = U3QuaternionUtil.ConvertU3QuatToU1(lhs) * U3QuaternionUtil.ConvertU3QuatToU1(rhs);
+            return U3QuaternionUtil.ConvertU1QuatToU3(q);
         }
 
         // Rotates the point /point/ with /rotation/.
@@ -198,10 +193,8 @@ namespace UnityEngine
 
         public Vector3 eulerAngles
         {
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-            get { return Internal_MakePositive(Internal_ToEulerRad(this) * Mathf.Rad2Deg); }
-            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-            set { this = Internal_FromEulerRad(value * Mathf.Deg2Rad); }
+            get => Internal_MakePositive(Internal_ToEulerRad(this) * Mathf.Rad2Deg);
+            set => Internal_FromEulerRad(value * Mathf.Deg2Rad);
         }
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static Quaternion Euler(float x, float y, float z) { return Internal_FromEulerRad(new Vector3(x, y, z) * Mathf.Deg2Rad); }

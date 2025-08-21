@@ -6,6 +6,8 @@ using System;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using GUSD.Utils;
+using Script.CoreUObject;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
@@ -32,6 +34,14 @@ namespace UnityEngine
         {
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return m_Distance; }
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] set { m_Distance = value; }
+        }
+        
+        public Plane(FPlane u1FPlane)
+        {
+            var u3NormalFromU1 = U3VectorUtil.GetU3PositionFromU1(u1FPlane.GetNormal());
+            m_Normal = Vector3.Normalize(u3NormalFromU1);
+            var u3BasePositionFromU1 = U3VectorUtil.GetU3PositionFromU1(u1FPlane.GetOrigin());
+            m_Distance = -Vector3.Dot(m_Normal, u3BasePositionFromU1);
         }
 
         // Creates a plane.

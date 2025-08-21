@@ -524,9 +524,10 @@ namespace UnityEditor
                 }
             }
 
-            unsafe void PushEvent<T>(ObjectChangeKind kind, ref T data) where T : unmanaged
+            unsafe void PushEvent<T>(ObjectChangeKind kind, ref T data)
+            //unsafe void PushEvent<T>(ObjectChangeKind kind, ref T data) where T : unmanaged
             {
-                PushEvent(kind, UnsafeUtility.AddressOf(ref data), sizeof(T));
+                //PushEvent(kind, UnsafeUtility.AddressOf(ref data), sizeof(T));
             }
 
             unsafe void PushEvent(ObjectChangeKind kind, void* data , int size)

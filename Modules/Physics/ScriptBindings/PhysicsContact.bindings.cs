@@ -169,9 +169,16 @@ namespace UnityEngine
 
         public int ColliderInstanceID => m_ColliderID;
         public int OtherColliderInstanceID => m_OtherColliderID;
+        
+        public readonly Collider m_ThisCollider;
+        public readonly Collider m_OtherCollider;
 
+        /**
         public Collider Collider => m_ColliderID == 0 ? null : Physics.GetColliderByInstanceID(m_ColliderID) as Collider;
         public Collider OtherCollider => m_OtherColliderID == 0 ? null : Physics.GetColliderByInstanceID(m_OtherColliderID) as Collider;
+         */
+        public Collider Collider => m_ThisCollider;
+        public Collider OtherCollider => m_OtherCollider;
 
         public int ContactCount => (int)m_NbPoints;
 
@@ -187,6 +194,13 @@ namespace UnityEngine
         // Capacity must be extended beforehand!
         extern internal int ExtractContacts(List<ContactPoint> managedContainer, bool flipped);
         extern internal int ExtractContactsArray([Unmarshalled] ContactPoint[] managedContainer, bool flipped);
+
+        internal ContactPair(uint numPoints, Collider thisCollider, Collider otherCollider)
+        {
+            m_NbPoints = numPoints;
+            m_ThisCollider = thisCollider;
+            m_OtherCollider = otherCollider;
+        }
 
         public void CopyToNativeArray(NativeArray<ContactPairPoint> buffer)
         {

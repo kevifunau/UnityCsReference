@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
@@ -13,6 +15,11 @@ using uei = UnityEngine.Internal;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using System.Threading;
+using GUSD.Utils;
+using Script.CoreUObject;
+using Script.DynamicCodeGen;
+using Script.Engine;
+using Script.UnrealCSharp;
 
 namespace UnityEngine
 {
@@ -75,10 +82,29 @@ namespace UnityEngine
     [NativeHeader("Runtime/SceneManager/SceneManager.h")]
     public partial class Object
     {
+        protected static TArray<AActor> CurrentWorldAllAActors => UGUSDWorldUtil.GetCurrentWorldAllActors();
+        
 #pragma warning disable 649
         IntPtr   m_CachedPtr;
 
-        private int m_InstanceID;
+        private static int staticm_InstanceID = 0;
+        private int _m_InstanceID = -1;
+        public int m_InstanceID
+        {
+            get
+            {
+                if (_m_InstanceID == -1)
+                {
+                    _m_InstanceID =  Interlocked.Increment(ref staticm_InstanceID);
+                }
+                return _m_InstanceID;
+            }
+            set
+            {
+                _m_InstanceID = value;
+            }
+        }
+
 #pragma warning disable 169
         private string m_UnityRuntimeErrorString;
 #pragma warning restore 169
@@ -293,8 +319,7 @@ namespace UnityEngine
             if (original is ScriptableObject)
                 throw new ArgumentException("Cannot instantiate a ScriptableObject with a position and rotation");
 
-            var obj = Internal_InstantiateSingle(original, position, rotation);
-
+            var obj = Internal_CloneSingleWithTransform(original, position, rotation);
             if (obj == null)
                 throw new UnityException(cloneDestroyedMessage);
 
@@ -420,9 +445,44 @@ namespace UnityEngine
             return (T)Instantiate((Object)original, parent, worldPositionStays);
         }
 
+        private static void DestroyActorAndAllAttachedChildren(AActor actor, float delay = 0.0f)
+        {
+            // Recursively destroys all childActors via Attach.
+            TArray<AActor> childActors = new TArray<AActor>();
+            actor.GetAttachedActors(ref childActors);
+            if (childActors != null)
+            {
+                foreach (AActor childActor in childActors)
+                {
+                    DestroyActorAndAllAttachedChildren(childActor, delay);
+                }
+
+            }
+            AGUSDMiscUtil.DestroyActorOrComponent(actor, delay);
+        }
+
         // Removes a gameobject, component or asset.
         [NativeMethod(Name = "Scripting::DestroyObjectFromScripting", IsFreeFunction = true, ThrowsException = true)]
-        public extern static void Destroy(Object obj, [uei.DefaultValue("0.0F")] float t);
+        public static void Destroy(Object obj, [uei.DefaultValue("0.0F")] float t)
+        {
+            // 处理 GameObject 类型
+            if (obj is GameObject go)
+            {
+                DestroyActorAndAllAttachedChildren(go.actor, t);
+                go = null;
+            }
+            // 处理 Component 类型
+            else if (obj is Component component)
+            {
+                AGUSDMiscUtil.DestroyActorOrComponent(component.u1Component, t);
+                component = null;
+            }
+            // 处理其他无效类型
+            else
+            {
+                Debug.LogWarning($"Destroy failed: {obj} is not a GameObject or Component.");
+            }
+        }
 
         [uei.ExcludeFromDocs]
         public static void Destroy(Object obj)
@@ -451,7 +511,56 @@ namespace UnityEngine
         // Returns a list of all loaded objects of Type /type/. Results are sorted by InstanceID
         [TypeInferenceRule(TypeInferenceRules.ArrayOfTypeReferencedByFirstArgument)]
         [FreeFunction("UnityEngineObjectBindings::FindObjectsOfType")]
-        public extern static Object[] FindObjectsOfType(Type type, bool includeInactive);
+        public static Object[] FindObjectsOfType(Type type, bool includeInactive)
+        {
+            var results = new List<Object>();
+            foreach (var currentWorldAActor in CurrentWorldAllAActors)
+            {
+                TArray<UActorComponent> uActorComponents = currentWorldAActor.K2_GetComponentsByClass(
+                    USceneComponent.StaticClass());
+                foreach (var uActorComponent in uActorComponents)
+                {
+                    if (CheckType(uActorComponent.GetType(), type))
+                    {
+                        var u3C = uActorComponent as U3ComponentU3_C;
+                        if (u3C != null)
+                        {
+                            results.Add(u3C.proxy);   
+                        }
+                    }
+                }
+            }
+
+            return results.ToArray();
+        }
+        
+        protected static bool CheckType(Type typeCompared, Type typeNeeded)
+        {
+            if (GameObject.IsU3ExportedClass(typeNeeded))
+            {
+                var comparedFullName = typeCompared.FullName;
+                var typeNeededFullName = typeNeeded.FullName;
+                if (String.IsNullOrEmpty(typeNeeded.Namespace))
+                {
+                    typeNeededFullName = "Script.CoreUObject." + typeNeededFullName + "U3_C";
+                }
+                return string.Equals(RemoveSuffix(comparedFullName), RemoveSuffix(typeNeededFullName));
+            }
+            return typeCompared == typeNeeded;
+        }
+
+        private static string RemoveSuffix(string typeStr)
+        {
+            if (typeStr.EndsWith("U3_C"))
+            {
+                return typeStr.Substring(0, typeStr.Length - 4);
+            }
+            if (typeStr.EndsWith("_C"))
+            {
+                return typeStr.Substring(0, typeStr.Length - 2);
+            }
+            return typeStr;
+        }
 
         // Returns a list of all active loaded objects of Type /type/.
         public static Object[] FindObjectsByType(Type type, FindObjectsSortMode sortMode)
@@ -466,10 +575,24 @@ namespace UnityEngine
 
         // Makes the object /target/ not be destroyed automatically when loading a new scene.
         [FreeFunction("GetSceneManager().DontDestroyOnLoad", ThrowsException = true)]
-        public extern static void DontDestroyOnLoad([NotNull("NullExceptionObject")] Object target);
+        public static void DontDestroyOnLoad([NotNull("NullExceptionObject")] Object target)
+        {
+        }
 
         // // Should the object be hidden, saved with the scene or modifiable by the user?
-        public extern HideFlags hideFlags { get; set; }
+        private HideFlags m_HideFlags;
+
+        public HideFlags hideFlags
+        {
+            get
+            {
+                return m_HideFlags;
+            }
+            set
+            {
+                m_HideFlags = value;
+            }
+        }
 
         //*undocumented* deprecated
         // We cannot properly deprecate this in C# right now, since the optional parameter creates
@@ -618,53 +741,136 @@ namespace UnityEngine
             return ToString(this);
         }
 
-        public static bool operator==(Object x, Object y) { return CompareBaseObjects(x, y); }
-
-        public static bool operator!=(Object x, Object y) { return !CompareBaseObjects(x, y); }
+        // public static bool operator==(Object x, Object y) { return CompareBaseObjects(x, y); }
+        //
+        // public static bool operator!=(Object x, Object y) { return !CompareBaseObjects(x, y); }
 
         [NativeMethod(Name = "Object::GetOffsetOfInstanceIdMember", IsFreeFunction = true, IsThreadSafe = true)]
         extern static int GetOffsetOfInstanceIDInCPlusPlusObject();
 
         [NativeMethod(Name = "CurrentThreadIsMainThread", IsFreeFunction = true, IsThreadSafe = true)]
-        extern static bool CurrentThreadIsMainThread();
+        public static bool CurrentThreadIsMainThread()
+        {
+            return AGUSDMiscUtil.CurrentThreadIsMainThread();
+        }
 
         [NativeMethod(Name = "CloneObject", IsFreeFunction = true, ThrowsException = true)]
-        extern static Object Internal_CloneSingle([NotNull("NullExceptionObject")] Object data);
+        static Object Internal_CloneSingle([NotNull("NullExceptionObject")] Object data)
+        {
+            if (data is GameObject)
+            {
+                var prefabGo = (GameObject) data;
+                var trans = prefabGo.GetComponent<Transform>();
+                if (trans != null)
+                {
+                    var pos = U3VectorUtil.GetU3PositionFromU1(trans.u1Component.RelativeLocation);
+                    var rotation = U3QuaternionUtil.ConvertU1QuatToU3(trans.u1Component.RelativeRotation.Quaternion());
+                    var objWithTans = Internal_CloneSingleWithTransform(prefabGo, pos, rotation);
+                    if (objWithTans != null) return objWithTans;
+                }
+            }
+            
+            MethodInfo func = data.GetType().GetMethod("CloneObject", BindingFlags.Public | BindingFlags.Static);
+            if (func != null)
+            {
+                return func.Invoke(null, [data]) as Object;
+            }
+
+            return null;
+        }
 
         [FreeFunction("CloneObjectToScene")]
         extern static Object Internal_CloneSingleWithScene([NotNull] Object data, Scene scene);
 
         [FreeFunction("CloneObjectWithParams")]
         extern static Object Internal_CloneSingleWithParams([NotNull] Object data, InstantiateParameters parameters);
+        
+        [NativeMethod(Name = "CloneObjectWithTransform", IsFreeFunction = true, ThrowsException = true)]
+        static Object Internal_CloneSingleWithTransform([NotNull("NullExceptionObject")] Object data, Vector3 position, Quaternion rotation)
+        {
+            MethodInfo func = data.GetType().GetMethod("CloneObjectWithTransform", BindingFlags.Public | BindingFlags.Static);
+            if (func != null)
+            {
+                return func.Invoke(null, [data, position, rotation]) as Object;
+            }
+
+            return null;
+        }
+        
         [FreeFunction("InstantiateObjectWithParams")]
         extern static Object Internal_InstantiateSingleWithParams([NotNull] Object data, Vector3 position, Quaternion rotation, InstantiateParameters parameters);
 
         [FreeFunction("CloneObject")]
-        extern static Object Internal_CloneSingleWithParent([NotNull("NullExceptionObject")] Object data, [NotNull("NullExceptionObject")] Transform parent, bool worldPositionStays);
+        static Object Internal_CloneSingleWithParent([NotNull("NullExceptionObject")] Object data,
+            [NotNull("NullExceptionObject")] Transform parent, bool worldPositionStays)
+        {
+            GameObject go = Instantiate(data) as GameObject;
+            go.transform.SetParent(parent, worldPositionStays);
+            return go;
+        }
 
         [FreeFunction("InstantiateAsyncObjects")]
         extern static AsyncInstantiateOperation Internal_InstantiateAsyncWithParams([NotNull("NullExceptionObject")] Object original, int count, InstantiateParameters parameters, IntPtr positions, int positionsCount, IntPtr rotations, int rotationsCount);
 
         [FreeFunction("InstantiateObject")]
-        extern static Object Internal_InstantiateSingle([NotNull("NullExceptionObject")] Object data, Vector3 pos, Quaternion rot);
+        static Object Internal_InstantiateSingle([NotNull("NullExceptionObject")] Object data, Vector3 pos,
+            Quaternion rot)
+        {
+            GameObject go = (GameObject)Internal_CloneSingleWithTransform(data, pos, rot);
+            return go;
+        }
 
         [FreeFunction("InstantiateObject")]
-        extern static Object Internal_InstantiateSingleWithParent([NotNull("NullExceptionObject")] Object data, [NotNull("NullExceptionObject")] Transform parent, Vector3 pos, Quaternion rot);
+        static Object Internal_InstantiateSingleWithParent([NotNull("NullExceptionObject")] Object data,
+            [NotNull("NullExceptionObject")] Transform parent, Vector3 pos, Quaternion rot)
+        {
+            GameObject go = (GameObject)Internal_CloneSingleWithTransform(data, pos, rot);
+            go.transform.SetParent(parent);
+            return go;
+        }
 
         [FreeFunction("UnityEngineObjectBindings::ToString")]
         extern static string ToString(Object obj);
 
         [FreeFunction("UnityEngineObjectBindings::GetName")]
-        extern static string GetName([NotNull("NullExceptionObject")] Object obj);
+        static string GetName([NotNull("NullExceptionObject")] Object obj)
+        {
+            TArray<FName> tags = new TArray<FName>();
+            if (obj is GameObject go)
+            {
+                tags = UGUSDActorUtil.GetTags(go.actor);
+            }
+            if (obj is Component comp)
+            {
+                tags = UGUSDActorUtil.GetTags(comp.owner);
+            }
+            return GameObject.FindTagByPrefix("U3Name_", ref tags);
+        }
 
         [FreeFunction("UnityEngineObjectBindings::IsPersistent")]
         internal extern static bool IsPersistent([NotNull("NullExceptionObject")] Object obj);
 
         [FreeFunction("UnityEngineObjectBindings::SetName")]
-        extern static void SetName([NotNull("NullExceptionObject")] Object obj, string name);
+        static void SetName([NotNull("NullExceptionObject")] Object obj, string name)
+        {
+            if (name == null)
+            {
+                return;
+            }
+            if (obj is GameObject go && go.actor != null)
+            {
+                TArray<FName> actorTags = go.actor.Tags;
+                actorTags.Remove("U3Name_" + GameObject.FindTagByPrefix("U3Name_", ref actorTags));
+                actorTags.Add("U3Name_" + name);
+            }
+        }
 
         [NativeMethod(Name = "UnityEngineObjectBindings::DoesObjectWithInstanceIDExist", IsFreeFunction = true, IsThreadSafe = true)]
-        internal extern static bool DoesObjectWithInstanceIDExist(int instanceID);
+        internal static bool DoesObjectWithInstanceIDExist(int instanceID)
+        {
+            //UE currently does not have instanceID search Actor, return true first
+            return true;
+        }
 
         [VisibleToOtherModules]
         [FreeFunction("UnityEngineObjectBindings::FindObjectFromInstanceID")]

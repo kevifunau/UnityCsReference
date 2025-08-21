@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using GUSD.Utils;
+using Script.UnrealCSharp;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using uei = UnityEngine.Internal;
@@ -191,7 +193,14 @@ namespace UnityEngine
     [ExcludeFromPreset]
     public sealed partial class Texture2D : Texture
     {
-        extern public TextureFormat format { [NativeName("GetTextureFormat")] get; }
+        public TextureFormat format
+        {
+            [NativeName("GetTextureFormat")]
+            get
+            {
+                return U3TextureUtil.ConvertU1FormatToU3(AGUSDTextureUtil.GetUTextureFormat(ue_texture2D));
+            }
+        }
 
         extern public bool ignoreMipmapLimit {
             [NativeName("IgnoreMipmapLimit")] get;
@@ -208,12 +217,12 @@ namespace UnityEngine
             [NativeName("GetMipmapLimit")] get;
         }
 
-        [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D whiteTexture { get; }
-        [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D blackTexture { get; }
-        [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D redTexture { get; }
-        [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D grayTexture { get; }
-        [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D linearGrayTexture { get; }
-        [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D normalTexture { get; }
+        [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] public static Texture2D whiteTexture { get; }
+        [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] public static Texture2D blackTexture { get; }
+        [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] public static Texture2D redTexture { get; }
+        [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] public static Texture2D grayTexture { get; }
+        [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] public static Texture2D linearGrayTexture { get; }
+        [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] public static Texture2D normalTexture { get; }
 
         extern public void Compress(bool highQuality);
 
@@ -225,7 +234,11 @@ namespace UnityEngine
                 throw new UnityException("Failed to create texture because of invalid parameters.");
         }
 
-        extern override public bool isReadable { get; }
+        override public bool isReadable
+        {
+            // TODO
+            get => true;
+        }
         [NativeConditional("ENABLE_VIRTUALTEXTURING && UNITY_EDITOR")][NativeName("VTOnly")] extern public bool vtOnly { get; }
         [NativeName("Apply")] extern private void ApplyImpl(bool updateMipmaps, bool makeNoLongerReadable);
         [NativeName("Reinitialize")] extern private bool ReinitializeImpl(int width, int height);

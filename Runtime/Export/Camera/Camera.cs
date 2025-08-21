@@ -5,19 +5,25 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using GUSD.Utils;
+using Script.CoreUObject;
+using Script.Dynamic;
+using Script.Engine;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using uei = UnityEngine.Internal;
-
 using OpaqueSortMode = UnityEngine.Rendering.OpaqueSortMode;
 using CameraEvent = UnityEngine.Rendering.CameraEvent;
 using CommandBuffer = UnityEngine.Rendering.CommandBuffer;
 using ComputeQueueType = UnityEngine.Rendering.ComputeQueueType;
+using Experimental = UnityEngine.Experimental;
+using Rendering = UnityEngine.Rendering;
 
 namespace UnityEngine
 {
+    [U3Exported]
     [NativeHeader("Runtime/Camera/Camera.h")]
     [NativeHeader("Runtime/Camera/RenderManager.h")]
     [NativeHeader("Runtime/GfxDevice/GfxDeviceTypes.h")]
@@ -27,8 +33,34 @@ namespace UnityEngine
     [NativeHeader("Runtime/Shaders/Shader.h")]
     [UsedByNativeCode]
     [RequireComponent(typeof(Transform))]
-    public sealed partial class Camera : Behaviour
+    public sealed class Camera : Behaviour
     {
+        // private UCameraComponent componentU1_ = null;
+
+        private UCameraComponent componentU1 = null;
+        private UCameraComponent ueCamera;
+
+        private USceneCaptureComponent2D sceneCaptureComponent2D = null;
+    
+        void Awake()
+        {
+            InitializeCorrespondU1Component();
+        }
+
+        private bool u1Initialized = false;
+
+        public override void InitializeCorrespondU1Component()
+        {
+            if (u1Initialized) return;
+            componentU1 = (UCameraComponent)gameObject.actor.GetComponentByClass(UCameraComponent.StaticClass());
+            sceneCaptureComponent2D =
+                (USceneCaptureComponent2D)gameObject.actor.AddComponentByClass(USceneCaptureComponent2D.StaticClass(),
+                    false, FTransform.Identity, false);
+            u1Initialized = true;
+        }
+        
+        private static Camera main_;
+
         /// <summary>
         /// The minimum allowed aperture.
         /// </summary>
@@ -49,24 +81,119 @@ namespace UnityEngine
         /// </summary>
         public const int kMaxBladeCount = 11;
 
-        public Camera() {}
+        [NativeProperty("Near")] public float nearClipPlane { get; set; } = 0.1f;
+        [NativeProperty("Far")] public float farClipPlane { get; set; } = 100;
 
-        [NativeProperty("Near")] extern public float nearClipPlane { get; set; }
-        [NativeProperty("Far")]  extern public float farClipPlane  { get; set; }
-        [NativeProperty("VerticalFieldOfView")]  extern public float fieldOfView   { get; set; }
+        [NativeProperty("VerticalFieldOfView")]
+        public float fieldOfView { get; set; } = 50;
 
         extern public RenderingPath renderingPath { get; set; }
-        extern public RenderingPath actualRenderingPath {[NativeName("CalculateRenderingPath")] get;  }
+        extern public RenderingPath actualRenderingPath { [NativeName("CalculateRenderingPath")] get; }
 
         extern public void Reset();
 
-        extern public bool allowHDR { get; set; }
-        extern public bool allowMSAA { get; set; }
-        extern public bool allowDynamicResolution { get; set; }
+        public bool allowHDR 
+        {
+            get
+            {
+                return UKismetSystemLibrary.GetConsoleVariableIntValue("r.HDR.EnableHDROutput") == 1;
+            }
+            set
+            {
+                UGameUserSettings gameSettings = UGameUserSettings.GetGameUserSettings();
+                if (value && !gameSettings.SupportsHDRDisplayOutput())
+                {
+                    Debug.LogWarning("HDR not supported on this device");
+                    return;
+                }
+                int displayNits = gameSettings.GetCurrentHDRDisplayNits();
+                gameSettings.EnableHDRDisplayOutput(value, displayNits);
+
+                UKismetSystemLibrary.ExecuteConsoleCommand(
+                    Unreal.GWorld, 
+                    $"r.HDR.EnableHDROutput {(value ? 1 : 0)}"
+                );
+                UKismetSystemLibrary.ExecuteConsoleCommand(
+                    Unreal.GWorld,
+                    $"r.HDR.EnableHDROutput {(value ? 1 : 0)} -priority SetByGameSetting"
+                );
+
+                gameSettings.ApplySettings(true);
+            }
+        }
+        public bool allowMSAA 
+        {
+            get
+            {
+                return UKismetSystemLibrary.GetConsoleVariableIntValue("r.AntiAliasingMethod") == 3;
+            }
+            set 
+            { 
+                if (value)
+                {
+                    UKismetSystemLibrary.ExecuteConsoleCommand(Unreal.GWorld, 
+                        "r.AntiAliasingMethod 3");
+                    UKismetSystemLibrary.ExecuteConsoleCommand(Unreal.GWorld, 
+                        "r.MSAACount 4");
+                }
+                else
+                {
+                    UKismetSystemLibrary.ExecuteConsoleCommand(Unreal.GWorld, 
+                        "r.AntiAliasingMethod 0");
+                    UKismetSystemLibrary.ExecuteConsoleCommand(Unreal.GWorld,
+                        "r.MSAACount 1");
+                }
+
+                UGameUserSettings gameSettings = UGameUserSettings.GetGameUserSettings();
+                gameSettings.SetAntiAliasingQuality(value ? 3 : 0);
+                gameSettings.ApplySettings(false);
+            }
+        }
+
+        public bool allowDynamicResolution 
+        {
+            get
+            {
+                return  UKismetSystemLibrary.GetConsoleVariableIntValue("r.DynamicRes.OperationMode") == 1;
+            }
+            set 
+            { 
+                UGameUserSettings gameSettings = UGameUserSettings.GetGameUserSettings();
+                gameSettings.SetDynamicResolutionEnabled(value);
+
+                UKismetSystemLibrary.ExecuteConsoleCommand(Unreal.GWorld, 
+                    $"r.DynamicRes.OperationMode {(value ? 1 : 0)}");
+                UKismetSystemLibrary.ExecuteConsoleCommand(Unreal.GWorld, 
+                    $"r.DynamicResolution {(value ? 1 : 0)}");
+                gameSettings.ApplySettings(true);
+            }
+        }
+
         [NativeProperty("ForceIntoRT")] extern public bool forceIntoRenderTexture { get; set; }
 
-        extern public float orthographicSize { get; set; }
-        extern public bool  orthographic { get; set; }
+        public float orthographicSize
+        {
+            get { return componentU1.OrthoWidth / componentU1.AspectRatio / 2; }
+            set { componentU1.OrthoWidth = value * componentU1.AspectRatio * 2; }
+        }
+
+        public bool orthographic
+        {
+            get
+            {
+                if (componentU1 == null)
+                {
+                    InitializeCorrespondU1Component();
+                }
+                return componentU1.ProjectionMode == ECameraProjectionMode.Orthographic;
+            }
+            set
+            {
+                componentU1.ProjectionMode =
+                    value ? ECameraProjectionMode.Orthographic : ECameraProjectionMode.Perspective;
+                ;
+            }
+        }
 
         extern public OpaqueSortMode opaqueSortMode { get; set; }
         extern public TransparencySortMode transparencySortMode { get; set; }
@@ -74,12 +201,20 @@ namespace UnityEngine
         extern public void ResetTransparencySortSettings();
 
         extern public float depth { get; set; }
-        extern public float aspect { get; set; }
+        public float aspect {
+            get
+            {
+                return componentU1.AspectRatio;
+            }
+            set
+            {
+                componentU1.AspectRatio = value;
+            } } 
         extern public void ResetAspect();
 
         extern public Vector3 velocity { get; }
-
-        extern public int cullingMask { get; set; }
+        
+        public int cullingMask = ~0;
         extern public int eventMask { get; set; }
         extern public bool layerCullSpherical { get; set; }
         extern public CameraType cameraType { get; set; }
@@ -108,7 +243,21 @@ namespace UnityEngine
         [Obsolete("PreviewCullingLayer is obsolete. Use scene culling masks instead.", false)]
         internal static int PreviewCullingLayer { get { return 31; } } // Return 31 because this used to be the PreviewCullingLayer stored in kPreviewLayer in Camera.h
 
-        extern public bool useOcclusionCulling { get; set; }
+        public bool useOcclusionCulling 
+        {
+            get
+            {
+                return  UKismetSystemLibrary.GetConsoleVariableIntValue("r.AllowOcclusionQueries") != 0 ;
+            }
+            set 
+            {
+                UKismetSystemLibrary.ExecuteConsoleCommand(Unreal.GWorld, 
+                    $"r.AllowOcclusionQueries {(value ? 1 : 0)}");
+                UKismetSystemLibrary.ExecuteConsoleCommand(Unreal.GWorld, 
+                    $"r.occlusion {(value ? 1 : 0)}");
+            }
+        }
+
         extern public Matrix4x4 cullingMatrix { get; set; }
         extern public void ResetCullingMatrix();
 
@@ -126,21 +275,22 @@ namespace UnityEngine
         extern internal ProjectionMatrixMode projectionMatrixMode { get; }
 
         public enum GateFitMode{ Vertical = 1 , Horizontal = 2, Fill = 3, Overscan = 4, None = 0 }
-        extern public bool usePhysicalProperties { get; set; }
+        public bool usePhysicalProperties { get; set; } = false;
 
 
-        extern public int iso  { get; set; }
-        extern public float shutterSpeed  { get; set; }
-        extern public float aperture  { get; set; }
-        extern public float focusDistance  { get; set; }
-        extern public float focalLength  { get; set; }
-        extern public int bladeCount  { get; set; }
-        extern public Vector2 curvature  { get; set; }
-        extern public float barrelClipping  { get; set; }
-        extern public float anamorphism  { get; set; }
-        extern public Vector2 sensorSize  { get; set; }
-        extern public Vector2 lensShift  { get; set; }
-        extern public GateFitMode gateFit  { get; set; }
+        extern public int iso { get; set; }
+        extern public float shutterSpeed { get; set; }
+        extern public float aperture { get; set; }
+        extern public float focusDistance { get; set; }
+        extern public float focalLength { get; set; }
+        extern public int bladeCount { get; set; }
+        extern public Vector2 curvature { get; set; }
+        extern public float barrelClipping { get; set; }
+        extern public float anamorphism { get; set; }
+        public Vector2 sensorSize { get; set; } = new Vector2(36, 24);
+        public Vector2 lensShift { get; set; } = new Vector2(0, 0);
+        public GateFitMode gateFit { get; set; } = GateFitMode.Horizontal;
+
         public enum FieldOfViewAxis { Vertical, Horizontal }
         extern public float GetGateFittedFieldOfView();
         extern public Vector2 GetGateFittedLensShift();
@@ -170,7 +320,51 @@ namespace UnityEngine
 
         extern public Matrix4x4 cameraToWorldMatrix { get; }
         extern public Matrix4x4 worldToCameraMatrix { get; set; }
-        extern public Matrix4x4 projectionMatrix    { get; set; }
+
+        public Matrix4x4 projectionMatrix
+        {
+            get
+            {
+                if (orthographic)
+                {
+                    return CreateOrthographicMatrix(orthographicSize, aspect, nearClipPlane, farClipPlane);
+                }
+
+                return CreatePerspectiveMatrix(fieldOfView, aspect, nearClipPlane, farClipPlane);
+            }
+        }
+        public static Matrix4x4 CreatePerspectiveMatrix(float fieldOfView, float aspectRatio, float nearClipPlane, float farClipPlane)
+        {
+            float fovRadians = Mathf.Deg2Rad * fieldOfView;
+            float tanHalfFov = Mathf.Tan(fovRadians / 2);
+    
+            Matrix4x4 matrix = Matrix4x4.zero;
+    
+            // 填充透视投影矩阵
+            matrix[0, 0] = 1.0f / (aspectRatio * tanHalfFov);
+            matrix[1, 1] = 1.0f / tanHalfFov;
+            matrix[2, 2] = -(farClipPlane + nearClipPlane) / (farClipPlane - nearClipPlane);
+            matrix[2, 3] = -2.0f * farClipPlane * nearClipPlane / (farClipPlane - nearClipPlane);
+            matrix[3, 2] = -1.0f;
+    
+            return matrix;
+        }
+        public static Matrix4x4 CreateOrthographicMatrix(float size, float aspectRatio, float nearClipPlane, float farClipPlane)
+        {
+            float halfHeight = size;
+            float halfWidth = size * aspectRatio;
+    
+            Matrix4x4 matrix = Matrix4x4.zero;
+    
+            // 填充正交投影矩阵
+            matrix[0, 0] = 1.0f / halfWidth;
+            matrix[1, 1] = 1.0f / halfHeight;
+            matrix[2, 2] = -2.0f / (farClipPlane - nearClipPlane);
+            matrix[2, 3] = -(farClipPlane + nearClipPlane) / (farClipPlane - nearClipPlane);
+            matrix[3, 3] = 1.0f;
+    
+            return matrix;
+        }
         extern public Matrix4x4 nonJitteredProjectionMatrix { get; set; }
         [NativeProperty("UseJitteredProjectionMatrixForTransparent")] extern public bool useJitteredProjectionMatrixForTransparentRendering { get; set; }
         extern public Matrix4x4 previousViewProjectionMatrix { get; }
@@ -178,8 +372,38 @@ namespace UnityEngine
         extern public void ResetProjectionMatrix();
 
         [FreeFunction("CameraScripting::CalculateObliqueMatrix", HasExplicitThis = true)] extern public Matrix4x4 CalculateObliqueMatrix(Vector4 clipPlane);
-
-        extern public Vector3 WorldToScreenPoint(Vector3 position, MonoOrStereoscopicEye eye);
+        public Vector3 WorldToScreenPoint(Vector3 position, MonoOrStereoscopicEye eye)
+        {
+            if (main == null)
+            {
+                Debug.LogError("Main camera is not initialized.");
+                return Vector3.zero;
+            }
+            // 1. 世界坐标 → 视图坐标
+            Vector3 viewPoint = main_.transform.InverseTransformPoint(position);    
+            // 2. 视图坐标 → 裁剪坐标
+            Vector4 clipPoint = main_.projectionMatrix * new Vector4(viewPoint.x, viewPoint.y, viewPoint.z, 1);
+            // 3. 裁剪坐标 → NDC坐标
+            Vector3 ndcPoint = new Vector3(
+                clipPoint.x / clipPoint.w,
+                clipPoint.y / clipPoint.w,
+                clipPoint.z / clipPoint.w
+            );
+            // 4. NDC坐标 → 屏幕坐标
+            Vector3 screenPoint = new Vector3(
+                (ndcPoint.x + 1) * 0.5f * Screen.width,
+                (ndcPoint.y + 1) * 0.5f * Screen.height,
+                ndcPoint.z // Z值表示深度，可用于判断前后顺序
+            );
+            // 处理相机后方的点（Z为负值）
+            if (viewPoint.z < 0)
+            {
+                // 相机后方的点可能会被镜像到屏幕上，需特殊处理
+                screenPoint.z = -1; // 标记为相机后方
+            }
+            
+            return screenPoint;
+        }
         extern public Vector3 WorldToViewportPoint(Vector3 position, MonoOrStereoscopicEye eye);
         extern public Vector3 ViewportToWorldPoint(Vector3 position, MonoOrStereoscopicEye eye);
         extern public Vector3 ScreenToWorldPoint(Vector3 position, MonoOrStereoscopicEye eye);
@@ -197,7 +421,34 @@ namespace UnityEngine
         public Ray ViewportPointToRay(Vector3 pos, MonoOrStereoscopicEye eye) { return ViewportPointToRay((Vector2)pos, eye); }
         public Ray ViewportPointToRay(Vector3 pos) { return ViewportPointToRay(pos, MonoOrStereoscopicEye.Mono); }
 
-        extern private Ray ScreenPointToRay(Vector2 pos, MonoOrStereoscopicEye eye);
+        private Ray ScreenPointToRay(Vector2 pos, MonoOrStereoscopicEye eye)
+        {
+            UWorld world = Unreal.GWorld;
+            if (world == null) 
+                return default;
+    
+            APlayerController playerController = UGameplayStatics.GetPlayerController(world, 0);
+            if (playerController == null) 
+                return default;
+            
+            float unrealY = Screen.height - pos.y;
+            
+    
+            FVector worldLocation = FVector.ZeroVector;
+            FVector worldDirection = FVector.ZeroVector;
+    
+            playerController.DeprojectScreenPositionToWorld(
+                pos.x, 
+                unrealY,
+                ref worldLocation,
+                ref worldDirection
+            );
+            return new Ray(
+                U3VectorUtil.GetU3PositionFromU1(worldLocation),
+                U3VectorUtil.GetU3DirectionFromU1(worldDirection) 
+            );
+        }
+        
         public Ray ScreenPointToRay(Vector3 pos, MonoOrStereoscopicEye eye) { return ScreenPointToRay((Vector2)pos, eye); }
         public Ray ScreenPointToRay(Vector3 pos) { return ScreenPointToRay(pos, MonoOrStereoscopicEye.Mono); }
 
@@ -241,7 +492,30 @@ namespace UnityEngine
         extern public static float HorizontalToVerticalFieldOfView(float horizontalFieldOfView, float aspectRatio);
         extern public static float VerticalToHorizontalFieldOfView(float verticalFieldOfView, float aspectRatio);
 
-        extern public static Camera main {[FreeFunction("FindMainCamera")] get; }
+        public static Camera main
+        {
+            get
+            {
+                if (main_ == null || !main_.ueCamera.IsValid())
+                {
+                    GameObject mainCameraGO = GameObject.FindWithTag("MainCamera");
+                    if (mainCameraGO != null) {
+                        main_ = mainCameraGO.GetComponent<Camera>();
+                        AActor cameraActor = UGameplayStatics.GetPlayerController(Unreal.GWorld, 0).PlayerCameraManager
+                            .ViewTarget.Target;
+                        if (cameraActor != null)
+                        {
+                            main_.ueCamera = (UCameraComponent)cameraActor.GetComponentByClass(UCameraComponent.StaticClass());
+                        }
+                    } else {
+                        main_ = null;
+                    }
+                    // main_ = new Camera();
+                }
+                return main_;
+            }
+        }
+
         extern public static Camera current {[FreeFunction("GetCurrentCameraPPtr")] get; }
 
         extern public UnityEngine.SceneManagement.Scene scene
@@ -500,10 +774,8 @@ namespace UnityEngine
 
         [FreeFunction("CameraScripting::GetCommandBuffers", HasExplicitThis = true)]
         extern public UnityEngine.Rendering.CommandBuffer[] GetCommandBuffers(UnityEngine.Rendering.CameraEvent evt);
-    }
 
-    public partial class Camera
-    {
+    
         // called before a camera culls the scene.
         // void OnPreCull();
 

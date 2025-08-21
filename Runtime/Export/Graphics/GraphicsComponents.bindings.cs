@@ -118,17 +118,6 @@ namespace UnityEngine
     }
 
     [RequireComponent(typeof(Transform))]
-    [NativeHeader("Runtime/Graphics/Mesh/MeshFilter.h")]
-    public sealed partial class MeshFilter : Component
-    {
-        [RequiredByNativeCode]  // MeshFilter is used in the VR Splash screen.
-        private void DontStripMeshFilter() {}
-
-        extern public Mesh sharedMesh { get; set; }
-        extern public Mesh mesh {[NativeName("GetInstantiatedMeshFromScript")] get; [NativeName("SetInstantiatedMesh")] set; }
-    }
-
-    [RequireComponent(typeof(Transform))]
     [NativeHeader("Runtime/Camera/HaloManager.h")]
     internal sealed partial class Halo : Behaviour
     {

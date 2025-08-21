@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
@@ -15,15 +17,23 @@ namespace UnityEngine
     [RequiredByNativeCode]
     public sealed class Coroutine : YieldInstruction
     {
+        public MonoBehaviour m_MonoBehaviour;
+        public IEnumerator m_routine;
+        public string m_methodName;
         internal IntPtr m_Ptr;
-        Coroutine() {}
-
+        public Stack<IEnumerator> CallStack { get; } = new Stack<IEnumerator>();
+        internal LinkedListNode<Coroutine> ListNode;
+        public bool IsDone => ListNode.List == null;
+        
         ~Coroutine()
         {
             ReleaseCoroutine(m_Ptr);
         }
 
         [FreeFunction("Coroutine::CleanupCoroutineGC", true)]
-        extern static void ReleaseCoroutine(IntPtr ptr);
+        static void ReleaseCoroutine(IntPtr ptr)
+        {
+            
+        }
     }
 }

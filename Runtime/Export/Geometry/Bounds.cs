@@ -6,6 +6,9 @@ using System;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using GUSD.Utils;
+using Script.CoreUObject;
+using Script.Engine;
 using UnityEngine.Scripting;
 using scm = System.ComponentModel;
 using uei = UnityEngine.Internal;
@@ -20,6 +23,7 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     public partial struct Bounds : IEquatable<Bounds>, IFormattable
     {
+        public AActor actor;
         private Vector3 m_Center;
         [NativeName("m_Extent")]
         private Vector3 m_Extents;
@@ -30,6 +34,14 @@ namespace UnityEngine
         {
             m_Center = center;
             m_Extents = size * 0.5F;
+        }
+
+        public static Bounds GetBoundsFormU1(FVector u1Center, FVector u1Extents)
+        {
+            var bounds = new Bounds();
+            bounds.m_Center = U3VectorUtil.GetU3PositionFromU1(u1Center);
+            bounds.m_Extents = U3VectorUtil.GetU3PositionFromU1(u1Extents);
+            return bounds;
         }
 
         // used to allow Bounds to be used as keys in hash tables

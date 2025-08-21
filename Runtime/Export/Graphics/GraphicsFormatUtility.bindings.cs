@@ -393,7 +393,11 @@ namespace UnityEngine
                 }
 
                 [FreeFunction("IsCompressedCrunchTextureFormat", IsThreadSafe = true)]
-                extern public static bool IsCrunchFormat(TextureFormat format);
+                public static bool IsCrunchFormat(TextureFormat format)
+                {
+                    // TODO
+                    return false;
+                }
 
                 [FreeFunction(IsThreadSafe = true)]
                 extern public static FormatSwizzle GetSwizzleR(GraphicsFormat format);

@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Script.CoreUObject;
+using Script.UnrealCSharp;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -82,27 +84,32 @@ namespace UnityEngine
         internal extern static Sprite CreateSpriteWithoutTextureScripting(Rect rect, Vector2 pivot, float pixelsToUnits, Texture2D texture);
 
         [FreeFunction("SpritesBindings::CreateSprite", ThrowsException = true)]
-        internal extern static Sprite CreateSprite(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, Vector4 border, bool generateFallbackPhysicsShape, [Unmarshalled] SecondarySpriteTexture[] secondaryTexture);
+        internal static Sprite CreateSprite(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit,
+            uint extrude, SpriteMeshType meshType, Vector4 border, bool generateFallbackPhysicsShape,
+            [Unmarshalled] SecondarySpriteTexture[] secondaryTexture)
+        {
+            var sp = new Sprite();
+            sp.m_texture = texture;
+            sp.m_rect = rect;
+            // TODO Add other
+            return sp;
+        }
 
         public extern Bounds bounds
         {
             get;
         }
 
-        public extern Rect rect
-        {
-            get;
-        }
+        private Rect m_rect;
+        public Rect rect => m_rect;
 
         public extern Vector4 border
         {
             get;
         }
 
-        public extern Texture2D texture
-        {
-            get;
-        }
+        private Texture2D m_texture;
+        public Texture2D texture => m_texture;
 
         // Get Secondary Textures.
         internal extern Texture2D GetSecondaryTexture(int index);
@@ -318,6 +325,20 @@ namespace UnityEngine
         public static Sprite Create(Texture2D texture, Rect rect, Vector2 pivot)
         {
             return Create(texture, rect, pivot, 100.0f);
+        }
+
+        private static Sprite Create(Texture2D texture)
+        {
+            var rect = new Rect(0, 0, texture.width, texture.height);
+            var pivot = Vector2.zero;
+            return Create(texture, rect, pivot);
+        }
+        
+        public static Object Load(string path)
+        {
+            Texture2D tex = new Texture2D(2, 2);
+            tex.ue_texture2D = AGUSDTextureUtil.LoadTexture(path.Replace("Resources/", ""));
+            return Create(tex);
         }
     }
 }

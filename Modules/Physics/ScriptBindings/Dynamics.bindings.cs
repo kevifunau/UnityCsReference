@@ -8,11 +8,15 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
+using GUSD.Utils;
+using Script.CoreUObject;
+using Script.Engine;
+using Script.UnrealCSharp;
 using UnityEngine.Internal;
 using UnityEngine.SceneManagement;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-
+using Script.Dynamic;
 
 namespace UnityEngine
 {
@@ -91,283 +95,6 @@ namespace UnityEngine
         }
     }
 
-    [RequireComponent(typeof(Transform))]
-    [NativeHeader("Modules/Physics/Rigidbody.h")]
-    public partial class Rigidbody : UnityEngine.Component
-    {
-        extern public Vector3 velocity { get; set; }
-        extern public Vector3 angularVelocity { get; set; }
-        extern public float drag { get; set; }
-        extern public float angularDrag { get; set; }
-        extern public float mass { get; set; }
-        extern public void SetDensity(float density);
-        extern public bool useGravity { get; set; }
-        extern public float maxDepenetrationVelocity { get; set; }
-        extern public bool isKinematic { get; set; }
-        extern public bool freezeRotation { get; set; }
-        extern public RigidbodyConstraints constraints { get; set; }
-        extern public CollisionDetectionMode collisionDetectionMode { get; set; }
-        extern public bool automaticCenterOfMass { get; set; }
-        extern public Vector3 centerOfMass { get; set; }
-        extern public Vector3 worldCenterOfMass { get; }
-        extern public bool automaticInertiaTensor { get; set; }
-        extern public Quaternion inertiaTensorRotation { get; set; }
-        extern public Vector3 inertiaTensor { get; set; }
-        extern public bool detectCollisions { get; set; }
-        extern public Vector3 position { get; set; }
-        extern public Quaternion rotation { get; set; }
-        extern public RigidbodyInterpolation interpolation { get; set; }
-        extern public int solverIterations { get; set; }
-        extern public float sleepThreshold { get; set; }
-        extern public float maxAngularVelocity { get; set; }
-        extern public float maxLinearVelocity { get; set; }
-        extern public void MovePosition(Vector3 position);
-        extern public void MoveRotation(Quaternion rot);
-        extern public void Move(Vector3 position, Quaternion rotation);
-        extern public void Sleep();
-        extern public bool IsSleeping();
-        extern public void WakeUp();
-        extern public void ResetCenterOfMass();
-        extern public void ResetInertiaTensor();
-        extern public Vector3 GetRelativePointVelocity(Vector3 relativePoint);
-        extern public Vector3 GetPointVelocity(Vector3 worldPoint);
-        extern public int solverVelocityIterations { get; set; }
-
-        // Get/Set the Exclude Layers,
-        extern public LayerMask excludeLayers { get; set; }
-
-        // Get/Set the Include Layers,
-        extern public LayerMask includeLayers { get; set; }
-
-        extern public Vector3 GetAccumulatedForce([DefaultValue("Time.fixedDeltaTime")] float step);
-
-        [ExcludeFromDocs]
-        public Vector3 GetAccumulatedForce()
-        {
-            return GetAccumulatedForce(Time.fixedDeltaTime);
-        }
-
-        extern public Vector3 GetAccumulatedTorque([DefaultValue("Time.fixedDeltaTime")] float step);
-
-        [ExcludeFromDocs]
-        public Vector3 GetAccumulatedTorque()
-        {
-            return GetAccumulatedTorque(Time.fixedDeltaTime);
-        }
-
-        extern public void AddForce(Vector3 force, [DefaultValue("ForceMode.Force")] ForceMode mode);
-
-        [ExcludeFromDocs]
-        public void AddForce(Vector3 force)
-        {
-            AddForce(force, ForceMode.Force);
-        }
-
-        public void AddForce(float x, float y, float z, [DefaultValue("ForceMode.Force")] ForceMode mode) { AddForce(new Vector3(x, y, z), mode); }
-
-        [ExcludeFromDocs]
-        public void AddForce(float x, float y, float z)
-        {
-            AddForce(new Vector3(x, y, z), ForceMode.Force);
-        }
-
-        extern public void AddRelativeForce(Vector3 force, [DefaultValue("ForceMode.Force")] ForceMode mode);
-
-        [ExcludeFromDocs]
-        public void AddRelativeForce(Vector3 force)
-        {
-            AddRelativeForce(force, ForceMode.Force);
-        }
-
-        public void AddRelativeForce(float x, float y, float z, [DefaultValue("ForceMode.Force")] ForceMode mode) { AddRelativeForce(new Vector3(x, y, z), mode); }
-
-        [ExcludeFromDocs]
-        public void AddRelativeForce(float x, float y, float z)
-        {
-            AddRelativeForce(new Vector3(x, y, z), ForceMode.Force);
-        }
-
-        extern public void AddTorque(Vector3 torque, [DefaultValue("ForceMode.Force")] ForceMode mode);
-
-        [ExcludeFromDocs]
-        public void AddTorque(Vector3 torque)
-        {
-            AddTorque(torque, ForceMode.Force);
-        }
-
-        public void AddTorque(float x, float y, float z, [DefaultValue("ForceMode.Force")] ForceMode mode) { AddTorque(new Vector3(x, y, z), mode); }
-
-        [ExcludeFromDocs]
-        public void AddTorque(float x, float y, float z)
-        {
-            AddTorque(new Vector3(x, y, z), ForceMode.Force);
-        }
-
-        extern public void AddRelativeTorque(Vector3 torque, [DefaultValue("ForceMode.Force")] ForceMode mode);
-
-        [ExcludeFromDocs]
-        public void AddRelativeTorque(Vector3 torque)
-        {
-            AddRelativeTorque(torque, ForceMode.Force);
-        }
-
-        public void AddRelativeTorque(float x, float y, float z, [DefaultValue("ForceMode.Force")] ForceMode mode) { AddRelativeTorque(new Vector3(x, y, z), mode); }
-
-        [ExcludeFromDocs]
-        public void AddRelativeTorque(float x, float y, float z)
-        {
-            AddRelativeTorque(x, y, z, ForceMode.Force);
-        }
-
-        extern public void AddForceAtPosition(Vector3 force, Vector3 position, [DefaultValue("ForceMode.Force")] ForceMode mode);
-
-        [ExcludeFromDocs]
-        public void AddForceAtPosition(Vector3 force, Vector3 position)
-        {
-            AddForceAtPosition(force, position, ForceMode.Force);
-        }
-
-        extern public void AddExplosionForce(float explosionForce, Vector3 explosionPosition, float explosionRadius, [DefaultValue("0.0f")] float upwardsModifier, [DefaultValue("ForceMode.Force)")] ForceMode mode);
-
-        [ExcludeFromDocs]
-        public void AddExplosionForce(float explosionForce, Vector3 explosionPosition, float explosionRadius, float upwardsModifier)
-        {
-            AddExplosionForce(explosionForce, explosionPosition, explosionRadius, upwardsModifier, ForceMode.Force);
-        }
-
-        [ExcludeFromDocs]
-        public void AddExplosionForce(float explosionForce, Vector3 explosionPosition, float explosionRadius)
-        {
-            AddExplosionForce(explosionForce, explosionPosition, explosionRadius, 0.0f, ForceMode.Force);
-        }
-
-        [NativeName("ClosestPointOnBounds")]
-        extern private void Internal_ClosestPointOnBounds(Vector3 point, ref Vector3 outPos, ref float distance);
-
-        public Vector3 ClosestPointOnBounds(Vector3 position)
-        {
-            float dist = 0f;
-            Vector3 outpos = Vector3.zero;
-            Internal_ClosestPointOnBounds(position, ref outpos, ref dist);
-            return outpos;
-        }
-
-        extern private RaycastHit SweepTest(Vector3 direction, float maxDistance, QueryTriggerInteraction queryTriggerInteraction, ref bool hasHit);
-
-        public bool SweepTest(Vector3 direction, out RaycastHit hitInfo, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
-        {
-            float dirLength = direction.magnitude;
-
-            if (dirLength > float.Epsilon)
-            {
-                Vector3 normalizedDirection = direction / dirLength;
-                bool hasHit = false;
-                hitInfo = SweepTest(normalizedDirection, maxDistance, queryTriggerInteraction, ref hasHit);
-                return hasHit;
-            }
-            else
-            {
-                hitInfo = new RaycastHit();
-                return false;
-            }
-        }
-
-        [ExcludeFromDocs]
-        public bool SweepTest(Vector3 direction, out RaycastHit hitInfo, float maxDistance)
-        {
-            return SweepTest(direction, out hitInfo, maxDistance, QueryTriggerInteraction.UseGlobal);
-        }
-
-        [ExcludeFromDocs]
-        public bool SweepTest(Vector3 direction, out RaycastHit hitInfo)
-        {
-            return SweepTest(direction, out hitInfo, Mathf.Infinity, QueryTriggerInteraction.UseGlobal);
-        }
-
-        [NativeName("SweepTestAll")]
-        extern private RaycastHit[] Internal_SweepTestAll(Vector3 direction, float maxDistance, QueryTriggerInteraction queryTriggerInteraction);
-
-        public RaycastHit[] SweepTestAll(Vector3 direction, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
-        {
-            float dirLength = direction.magnitude;
-            if (dirLength > float.Epsilon)
-            {
-                Vector3 normalizedDirection = direction / dirLength;
-                return Internal_SweepTestAll(normalizedDirection, maxDistance, queryTriggerInteraction);
-            }
-            else
-            {
-                return new RaycastHit[0];
-            }
-        }
-
-        [ExcludeFromDocs]
-        public RaycastHit[] SweepTestAll(Vector3 direction, float maxDistance)
-        {
-            return SweepTestAll(direction, maxDistance, QueryTriggerInteraction.UseGlobal);
-        }
-
-        [ExcludeFromDocs]
-        public RaycastHit[] SweepTestAll(Vector3 direction)
-        {
-            return SweepTestAll(direction, Mathf.Infinity, QueryTriggerInteraction.UseGlobal);
-        }
-    }
-
-    [RequiredByNativeCode]
-    [RequireComponent(typeof(Transform))]
-    [NativeHeader("Modules/Physics/Collider.h")]
-    public partial class Collider : Component
-    {
-        extern public bool enabled { get; set; }
-        extern public Rigidbody attachedRigidbody {[NativeMethod("GetRigidbody")] get; }
-        extern public ArticulationBody attachedArticulationBody {[NativeMethod("GetArticulationBody")] get; }
-        extern public bool isTrigger { get; set; }
-        extern public float contactOffset { get; set; }
-        extern public Vector3 ClosestPoint(Vector3 position);
-        extern public Bounds bounds { get; }
-        extern public bool hasModifiableContacts {get; set;}
-        extern public bool providesContacts { get; set; }
-
-        // Get/Set the Layer Override Priority.
-        extern public int layerOverridePriority { get; set; }
-
-        // Get/Set the Exclude Layers,
-        extern public LayerMask excludeLayers { get; set; }
-
-        // Get/Set the Include Layers,
-        extern public LayerMask includeLayers { get; set; }
-
-        [NativeMethod("Material")]
-        extern public PhysicMaterial sharedMaterial { get; set; }
-
-        extern public PhysicMaterial material
-        {
-            [NativeMethod("GetClonedMaterial")] get;
-            [NativeMethod("SetMaterial")] set;
-        }
-
-        extern private RaycastHit Raycast(Ray ray, float maxDistance, ref bool hasHit);
-
-        public bool Raycast(Ray ray, out RaycastHit hitInfo, float maxDistance)
-        {
-            bool hasHit = false;
-            hitInfo = Raycast(ray, maxDistance, ref hasHit);
-            return hasHit;
-        }
-
-        [NativeName("ClosestPointOnBounds")]
-        extern private void Internal_ClosestPointOnBounds(Vector3 point, ref Vector3 outPos, ref float distance);
-
-        public Vector3 ClosestPointOnBounds(Vector3 position)
-        {
-            float dist = 0f;
-            Vector3 outpos = Vector3.zero;
-            Internal_ClosestPointOnBounds(position, ref outpos, ref dist);
-            return outpos;
-        }
-    }
-
     [NativeHeader("Modules/Physics/CharacterController.h")]
     public class CharacterController : Collider
     {
@@ -413,18 +140,63 @@ namespace UnityEngine
 
     [RequiredByNativeCode]
     [NativeHeader("Modules/Physics/BoxCollider.h")]
+    [U3Exported(false)]
     public partial class BoxCollider : Collider
     {
         extern public Vector3 center { get; set; }
-        extern public Vector3 size { get; set; }
+        
+        public Vector3 size
+        {
+            get
+            {
+                UBoxComponent boxComponent = GameObject.GetU1ChildComponent<UBoxComponent>(u1Component);
+                if (boxComponent != null)
+                {
+                    FVector u1Extent = boxComponent.GetUnscaledBoxExtent();
+                    return U3VectorUtil.GetU3SizeFromU1Extent(u1Extent);
+                }
+                return Vector3.zero;
+            }
+            set
+            {
+                UBoxComponent boxComponent = GameObject.GetU1ChildComponent<UBoxComponent>(u1Component);
+                if (boxComponent != null)
+                {
+                    FVector newExtent = U3VectorUtil.GetU1ExtentFromU3Size(value);
+                    boxComponent.SetBoxExtent(newExtent, true);
+                }
+            }
+        }
     }
 
     [RequiredByNativeCode]
     [NativeHeader("Modules/Physics/SphereCollider.h")]
+    [U3Exported(false)]
     public class SphereCollider : Collider
     {
         extern public Vector3 center { get; set; }
-        extern public float radius { get; set; }
+        public float radius
+        {
+            get
+            {
+                USphereComponent sphereComponent = GameObject.GetU1ChildComponent<USphereComponent>(u1Component);
+                if (sphereComponent != null)
+                {
+                    float unrealRadius = sphereComponent.SphereRadius;
+                    return unrealRadius / U3Constants.U3VectorScale;
+                }
+                return 0.0f;
+            }
+            set
+            {
+                USphereComponent sphereComponent = GameObject.GetU1ChildComponent<USphereComponent>(u1Component);
+                if (sphereComponent != null)
+                {
+                    float unrealRadius = value * U3Constants.U3VectorScale;
+                    sphereComponent.SetSphereRadius(unrealRadius);
+                }
+            }
+        }
     }
 
     [RequireComponent(typeof(Rigidbody))]
@@ -578,14 +350,20 @@ namespace UnityEngine
         internal Vector3  m_Impulse;
         internal int m_ThisColliderInstanceID;
         internal int m_OtherColliderInstanceID;
+        internal Collider m_ThisCollider;
+        internal Collider m_OtherCollider;
         internal float m_Separation;
 
         public Vector3 point  { get { return m_Point; } }
         public Vector3 normal { get { return m_Normal; } }
         public Vector3 impulse { get { return m_Impulse;} }
 
+        /**
         public Collider thisCollider { get { return Physics.GetColliderByInstanceID(m_ThisColliderInstanceID); } }
         public Collider otherCollider { get { return Physics.GetColliderByInstanceID(m_OtherColliderInstanceID); } }
+         */
+        public Collider thisCollider { get { return m_ThisCollider; } }
+        public Collider otherCollider { get { return m_OtherCollider; } }
         public float separation { get { return m_Separation; }}
 
         internal ContactPoint(Vector3 point, Vector3 normal, Vector3 impulse, float separation, int thisInstanceID, int otherInstenceID)
@@ -596,6 +374,16 @@ namespace UnityEngine
             m_Separation = separation;
             m_ThisColliderInstanceID = thisInstanceID;
             m_OtherColliderInstanceID = otherInstenceID;
+        }
+        
+        internal ContactPoint(Vector3 point, Vector3 normal, Vector3 impulse, float separation, Collider thisCollider, Collider otherCollider)
+        {
+            m_Point = point;
+            m_Normal = normal;
+            m_Impulse = impulse;
+            m_Separation = separation;
+            m_ThisCollider = thisCollider;
+            m_OtherCollider = otherCollider;
         }
     }
 
@@ -982,7 +770,49 @@ namespace UnityEngine
         }
 
         [NativeName("IgnoreCollision")]
-        extern public static void IgnoreLayerCollision(int layer1, int layer2, [DefaultValue("true")] bool ignore);
+        public static void IgnoreLayerCollision(int layer1, int layer2, [DefaultValue("true")] bool ignore)
+        {
+            try
+            {
+                // Get the Collision configuration class
+                UClass collisionProfileClass = UCollisionProfile.StaticClass();
+                if (collisionProfileClass == null) 
+                    return ;
+                
+                // Get instance of collision configuration
+                UCollisionProfile collisionProfile = collisionProfileClass.GetDefaultObject() as UCollisionProfile;
+                if (collisionProfile == null)
+                    return;
+ 
+                // Get channel settings
+                TArray<FCollisionResponseTemplate> templates = collisionProfile.Profiles;
+                FCollisionResponseTemplate channelSetup1 = templates[layer1];
+                FCollisionResponseTemplate channelSetup2 = templates[layer2];
+                        
+                TArray<FResponseChannel> channel1 = channelSetup1.CustomResponses;
+                foreach(FResponseChannel chanel in channel1)
+                { 
+                    if (chanel.Channel.ToString().Equals(LayerMask.LayerToName((layer2)), StringComparison.OrdinalIgnoreCase))
+                    {
+                        chanel.Response =  ignore? ECollisionResponse.ECR_Ignore : ECollisionResponse.ECR_Block;
+                        break;
+                    }
+                }
+                TArray<FResponseChannel> channel2 = channelSetup2.CustomResponses;
+                foreach(FResponseChannel chanel in channel2)
+                { 
+                    if (chanel.Channel.ToString().Equals(LayerMask.LayerToName((layer1)), StringComparison.OrdinalIgnoreCase))
+                    {
+                        chanel.Response =  ignore? ECollisionResponse.ECR_Ignore : ECollisionResponse.ECR_Block;
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error: {ex.Message}");
+            }
+        }
 
         [ExcludeFromDocs]
         public static void IgnoreLayerCollision(int layer1, int layer2)
@@ -1537,7 +1367,29 @@ namespace UnityEngine
         extern private static Collider[] OverlapSphere_Internal(PhysicsScene physicsScene, Vector3 position, float radius, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
         public static Collider[] OverlapSphere(Vector3 position, float radius, [DefaultValue("AllLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
-            return OverlapSphere_Internal(defaultPhysicsScene, position, radius, layerMask, queryTriggerInteraction);
+            List<Collider> colliderList = new List<Collider>();
+            var center = U3VectorUtil.GetU1LocationFromU3(position);
+            TArray<FOverlapResult> overlapResults = new TArray<FOverlapResult>();
+            TArray<int> collisionChannels = new TArray<int>();
+            if (layerMask != AllLayers)
+            {
+                // TODO FIx LayerMask
+            }
+
+            var u1Radius = U3VectorUtil.GetU1DistanceFromU3(radius);
+            bool bHit = UGUSDWorldUtil.OverlapSphere(Unreal.GWorld, ref overlapResults, center, collisionChannels, u1Radius);
+            if (bHit)
+            {
+                foreach (var result in overlapResults)
+                {
+                    Collider collider = GameObject.GetChildComponent<Collider>(result.Component.Get());
+                    if (collider != null)
+                    {
+                        colliderList.Add(collider);
+                    }
+                }
+            }
+            return colliderList.ToArray();
         }
 
         [ExcludeFromDocs]

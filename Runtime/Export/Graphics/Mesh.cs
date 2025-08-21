@@ -5,6 +5,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using GUSD.Utils;
+using Script.CoreUObject;
+using Script.Engine;
+using Script.UnrealCSharp;
 using UnityEngine.Internal;
 using UnityEngine.Scripting;
 using UnityEngine.Rendering;
@@ -13,12 +17,14 @@ using Unity.Collections.LowLevel.Unsafe;
 
 using uei = UnityEngine.Internal;
 using UnityEngine.Bindings;
+using AActor = Script.Engine.AActor;
 
 namespace UnityEngine
 {
     [RequiredByNativeCode] // Used by IMGUI (even on empty projects, it draws development console & watermarks)
     public sealed partial class Mesh : Object
     {
+        public AActor actor;
         internal static VertexAttribute GetUVChannel(int uvIndex)
         {
             if (uvIndex < 0 || uvIndex > 7)
@@ -142,7 +148,21 @@ namespace UnityEngine
 
         public Vector3[] vertices
         {
-            get { return GetAllocArrayFromChannel<Vector3>(VertexAttribute.Position); }
+            get
+            {
+                var UEVertices = AGUSDMeshUtil.GetverticesPosition(actor);
+                Vector3[] verticesarray = new Vector3[UEVertices.Num()];
+                for (int i = 0; i < UEVertices.Num(); i++)
+                {
+                    var position = new Vector3();
+                    position.x = (float)UEVertices[i].Y;
+                    position.y = (float)UEVertices[i].Z;
+                    position.z = (float)UEVertices[i].X;
+                    position /= 100;
+                    verticesarray[i] = position;
+                }
+                return verticesarray;
+            }
             set { SetArrayForChannel(VertexAttribute.Position, value, UnityEngine.Rendering.MeshUpdateFlags.Default); }
         }
         public Vector3[] normals
@@ -858,9 +878,13 @@ namespace UnityEngine
         {
             get
             {
-                if (canAccess)  return GetTrianglesImpl(-1, true);
-                else            PrintErrorCantAccessIndices();
-                return new int[0];
+                var TriangleVertexArray = AGUSDMeshUtil.GetTriangleVertexArray(actor);
+                int[] intArray = new int[TriangleVertexArray.Num()];
+                for (int i = 0; i < TriangleVertexArray.Num(); i++)
+                {
+                    intArray[i] = TriangleVertexArray[i];
+                }
+                return intArray;
             }
             set
             {

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Script.Engine;
 using UnityEngine.Bindings;
 
 namespace UnityEngine
@@ -37,19 +38,25 @@ namespace UnityEngine
 
         // Returns a random float number between and [minInclusive, maxInclusive] (RO).
         [FreeFunction]
-        extern public static float Range(float minInclusive, float maxInclusive);
+        public static float Range(float minInclusive, float maxInclusive)
+        {
+            return (float)UKismetMathLibrary.RandomFloatInRange(minInclusive, maxInclusive);
+        }
 
         // Returns a random integer number between [minInclusive, maxExclusive) (RO).
         public static int Range(int minInclusive, int maxExclusive) { return RandomRangeInt(minInclusive, maxExclusive); }
 
         [FreeFunction]
-        extern private static int RandomRangeInt(int minInclusive, int maxExclusive);
+        private static int RandomRangeInt(int minInclusive, int maxExclusive)
+        {
+            return UKismetMathLibrary.RandomIntegerInRange(minInclusive, maxExclusive);
+        }
 
         // Returns a random number between 0.0 [inclusive] and 1.0 [inclusive] (RO).
-        extern public static float value
+        public static float value
         {
             [FreeFunction]
-            get;
+            get => (float)UKismetMathLibrary.RandomFloat();
         }
 
         // Returns a random point inside a sphere with radius 1 (RO).

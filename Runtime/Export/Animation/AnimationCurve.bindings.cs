@@ -151,7 +151,10 @@ namespace UnityEngine
         extern static private void Internal_Destroy(IntPtr ptr);
 
         [FreeFunction("AnimationCurveBindings::Internal_Create", IsThreadSafe = true)]
-        extern static private IntPtr Internal_Create(Keyframe[] keys);
+        static private IntPtr Internal_Create(Keyframe[] keys)
+        {
+            return 0;
+        }
 
         [FreeFunction("AnimationCurveBindings::Internal_Equals", HasExplicitThis = true, IsThreadSafe = true)]
         extern private bool Internal_Equals(IntPtr other);

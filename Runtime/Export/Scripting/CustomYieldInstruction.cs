@@ -6,7 +6,7 @@ using System.Collections;
 
 namespace UnityEngine
 {
-    public abstract class CustomYieldInstruction : IEnumerator
+    public abstract class CustomYieldInstruction :YieldInstruction
     {
         public abstract bool keepWaiting
         {

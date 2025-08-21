@@ -7,6 +7,7 @@ using System.Reflection;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
+using Script.UnrealCSharp;
 
 namespace UnityEngine
 {
@@ -691,7 +692,10 @@ namespace UnityEngine
         static extern BatteryStatus GetBatteryStatus();
 
         [FreeFunction("systeminfo::GetOperatingSystem")]
-        static extern string GetOperatingSystem();
+        static string GetOperatingSystem()
+        {
+            return UGUSDPlatform.GetOperatingSystem().ToString();
+        }
 
         [FreeFunction("systeminfo::GetOperatingSystemFamily")]
         static extern OperatingSystemFamily GetOperatingSystemFamily();
@@ -703,10 +707,16 @@ namespace UnityEngine
         static extern int GetProcessorFrequencyMHz();
 
         [FreeFunction("systeminfo::GetProcessorCount")]
-        static extern int GetProcessorCount();
+        private static int GetProcessorCount()
+        {
+            return UGUSDPlatform.GetProcessorCount();
+        }
 
         [FreeFunction("systeminfo::GetPhysicalMemoryMB")]
-        static extern int GetPhysicalMemoryMB();
+        static int GetPhysicalMemoryMB()
+        {
+            return UGUSDPlatform.GetPhysicalMemoryMB();
+        }
 
         [FreeFunction("systeminfo::GetDeviceUniqueIdentifier")]
         static extern string GetDeviceUniqueIdentifier();
@@ -733,13 +743,19 @@ namespace UnityEngine
         static extern bool SupportsAudio();
 
         [FreeFunction("systeminfo::GetDeviceType")]
-        static extern DeviceType GetDeviceType();
+        static DeviceType GetDeviceType()
+        {
+            return (DeviceType)UGUSDPlatform.DeviceType();
+        }
 
         [FreeFunction("ScriptingGraphicsCaps::GetGraphicsMemorySize")]
         static extern int GetGraphicsMemorySize();
 
         [FreeFunction("ScriptingGraphicsCaps::GetGraphicsDeviceName")]
-        static extern string GetGraphicsDeviceName();
+        static string GetGraphicsDeviceName()
+        {
+            return UGUSDPlatform.GraphicsDeviceName().ToString();
+        }
 
         [FreeFunction("ScriptingGraphicsCaps::GetGraphicsDeviceVendor")]
         static extern string GetGraphicsDeviceVendor();

@@ -2,12 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+// #define U3_DEBUG
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Script.CoreUObject;
+using Script.UnrealCSharp;
 using UnityEngine.Internal;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -103,7 +106,18 @@ namespace UnityEngine
         public static extern unsafe int ExtractStackTraceNoAlloc(byte* buffer, int bufferMax, string projectFolder);
 
         // Logs /message/ to the Unity Console.
-        public static void Log(object message) { unityLogger.Log(LogType.Log, message); }
+        public static void Log(object message)
+        {
+            ADebugActor.PrintDisplay((string)message);
+        }
+        
+        // debug message to the Unity Console.
+        public static void LogDebug(object message)
+        {
+#if U3_DEBUG
+            ADebugActor.PrintDisplay((string)message);
+#endif
+        }
 
         // Logs /message/ to the Unity Console.
         public static void Log(object message, Object context)
@@ -131,7 +145,10 @@ namespace UnityEngine
         }
 
         // A variant of Debug.Log that logs an error message to the console.
-        public static void LogError(object message) { unityLogger.Log(LogType.Error, message); }
+        public static void LogError(object message)
+        {
+            ADebugActor.PrintError((string)message);
+        }
 
         // A variant of Debug.Log that logs an error message to the console.
         public static void LogError(object message, Object context) { unityLogger.Log(LogType.Error, message, context); }
@@ -189,7 +206,10 @@ namespace UnityEngine
         internal static extern void LogPlayerBuildError(string message, string file, int line, int column);
 
         // A variant of Debug.Log that logs a warning message to the console.
-        public static void LogWarning(object message) { unityLogger.Log(LogType.Warning, message); }
+        public static void LogWarning(object message)
+        {
+            ADebugActor.PrintWarning((string)message);
+        }
 
         // A variant of Debug.Log that logs a warning message to the console.
         public static void LogWarning(object message, Object context) { unityLogger.Log(LogType.Warning, message, context); }

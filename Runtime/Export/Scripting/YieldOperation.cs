@@ -12,5 +12,9 @@ namespace UnityEngine
     [UsedByNativeCode]
     public class YieldInstruction
     {
+        public virtual bool Tick()
+        {
+            return false;
+        }
     }
 }

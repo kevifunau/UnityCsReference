@@ -342,7 +342,12 @@ namespace UnityEditor
 
         // Returns true if the object is part of a any type of prefab, asset or instance
         [FreeFunction]
-        extern public static bool IsPartOfAnyPrefab([NotNull] Object componentOrGameObject);
+        public static bool IsPartOfAnyPrefab([NotNull] Object componentOrGameObject)
+        {
+            //The correspondence between prefabricated bodies and blueprint classes needs to be organized and implemented first,
+            //and then implemented in a blank space
+            return false;
+        }
 
         [FreeFunction]
         extern internal static void SetHasSubscribersToAllowRecordingPrefabPropertyOverrides(bool hasSubscribers);
@@ -369,7 +374,12 @@ namespace UnityEditor
         // Note that prefab instances in prefab mode are not assets/persistent since technically,
         // the object edited in Prefab Mode is not the persistent prefab asset itself.
         [FreeFunction]
-        extern public static bool IsPartOfNonAssetPrefabInstance([NotNull] Object componentOrGameObject);
+        public static bool IsPartOfNonAssetPrefabInstance([NotNull] Object componentOrGameObject)
+        {
+            //The correspondence between prefabricated bodies and blueprint classes needs to be organized and implemented first,
+            //and then implemented in a blank space
+            return true;
+        }
 
         // We need a version of IsPartOfNonAssetPrefabInstance that uses an instanceID in order to handle missing monobehaviors
         // which leads to managed null references (unity null) even though we have a native object. See handling for missing
@@ -395,7 +405,10 @@ namespace UnityEditor
         extern public static bool IsPartOfImmutablePrefab([NotNull] Object componentOrGameObject);
 
         [FreeFunction]
-        extern public static bool IsPrefabAssetMissing([NotNull] Object instanceComponentOrGameObject);
+        public static bool IsPrefabAssetMissing([NotNull] Object instanceComponentOrGameObject)
+        {
+            return false;
+        }
 
         [FreeFunction]
         extern public static GameObject GetOutermostPrefabInstanceRoot([NotNull] Object componentOrGameObject);

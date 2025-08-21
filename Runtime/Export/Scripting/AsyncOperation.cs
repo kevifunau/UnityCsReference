@@ -4,15 +4,20 @@
 
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using System;
+using System.IO;
+using UnityEngine.SceneManagement;
+
 namespace UnityEngine
 {
     public partial class AsyncOperation : YieldInstruction
     {
         internal IntPtr m_Ptr;
 
+        private int sceneId = -1;
+
         ~AsyncOperation()
         {
-            InternalDestroy(m_Ptr);
+            //InternalDestroy(m_Ptr);
         }
 
         private System.Action<AsyncOperation> m_completeCallback;
@@ -20,9 +25,15 @@ namespace UnityEngine
         [RequiredByNativeCode]
         internal void InvokeCompletionEvent()
         {
-            if (m_completeCallback != null)
+            if (_hasInvokedCompletion) return;
+            _hasInvokedCompletion = true;
+            _isMarkedComplete = true;
+            try
             {
-                m_completeCallback(this);
+                m_completeCallback?.Invoke(this);
+            }
+            finally
+            {
                 m_completeCallback = null;
             }
         }
@@ -40,10 +51,7 @@ namespace UnityEngine
                     m_completeCallback += value;
                 }
             }
-            remove
-            {
-                m_completeCallback -= value;
-            }
+            remove { m_completeCallback -= value; }
         }
     }
 }

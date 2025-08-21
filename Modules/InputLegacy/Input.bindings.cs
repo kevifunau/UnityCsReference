@@ -3,8 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using GUSD.Utils;
+using Script.CoreUObject;
+using Script.Engine;
+using Script.UnrealCSharp;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -295,63 +300,95 @@ namespace UnityEngine
         internal static class InputUnsafeUtility
         {
             [NativeThrows]
-            internal extern static bool GetKeyString(string name);
+            internal static bool GetKeyString(string name)
+            {
+                return InputComponentU3_C.GetKey(U3InputUtil.GetU1KeyNameByKeyString(name));
+            }
             // Burst shadow
             [NativeThrows]
             // This will only be referenced from Burst-generated code, in place of the version without the
             // __Managed suffix. So we need to make sure it will not get stripped.
             [RequiredMember]
             internal extern static unsafe bool GetKeyString__Unmanaged(byte* name, int nameLen);
+
             [NativeThrows]
-            internal extern static bool GetKeyUpString(string name);
+            internal static bool GetKeyUpString(string name)
+            {
+                return InputComponentU3_C.GetKeyUp(U3InputUtil.GetU1KeyNameByKeyString(name));
+
+            }
             // Burst shadow
             [NativeThrows]
             // This will only be referenced from Burst-generated code, in place of the version without the
             // __Managed suffix. So we need to make sure it will not get stripped.
             [RequiredMember]
             internal extern static unsafe bool GetKeyUpString__Unmanaged(byte* name, int nameLen);
+
             [NativeThrows]
-            internal extern static bool GetKeyDownString(string name);
+            internal static bool GetKeyDownString(string name)
+            {
+                return InputComponentU3_C.GetKeyDown(U3InputUtil.GetU1KeyNameByKeyString(name));
+            }
             // Burst shadow
             [NativeThrows]
             // This will only be referenced from Burst-generated code, in place of the version without the
             // __Managed suffix. So we need to make sure it will not get stripped.
             [RequiredMember]
             internal extern static unsafe bool GetKeyDownString__Unmanaged(byte* name, int nameLen);
+
             [NativeThrows]
-            internal extern static float GetAxis(string axisName);
+            internal static float GetAxis(string axisName)
+            {
+                return InputComponentU3_C.GetAxis(axisName);
+            }
             // Burst shadow
             [NativeThrows]
             // This will only be referenced from Burst-generated code, in place of the version without the
             // __Managed suffix. So we need to make sure it will not get stripped.
             [RequiredMember]
             internal extern static unsafe float GetAxis__Unmanaged(byte* axisName, int axisNameLen);
+
             [NativeThrows]
-            internal extern static float GetAxisRaw(string axisName);
+            internal static float GetAxisRaw(string axisName)
+            {
+                return InputComponentU3_C.GetAxis(axisName);
+            }
             // Burst shadow
             [NativeThrows]
             // This will only be referenced from Burst-generated code, in place of the version without the
             // __Managed suffix. So we need to make sure it will not get stripped.
             [RequiredMember]
             internal extern static unsafe float GetAxisRaw__Unmanaged(byte* axisName, int axisNameLen);
+
             [NativeThrows]
-            internal extern static bool GetButton(string buttonName);
+            internal static bool GetButton(string buttonName)
+            {
+                return InputComponentU3_C.GetKey(U3InputUtil.GetU1KeyNameByButtonString(buttonName));
+            }
             // Burst shadow
             [NativeThrows]
             // This will only be referenced from Burst-generated code, in place of the version without the
             // __Managed suffix. So we need to make sure it will not get stripped.
             [RequiredMember]
             internal extern static unsafe bool GetButton__Unmanaged(byte* buttonName, int buttonNameLen);
+
             [NativeThrows]
-            internal extern static bool GetButtonDown(string buttonName);
+            internal static bool GetButtonDown(string buttonName)
+            {
+                return InputComponentU3_C.GetKeyDown(U3InputUtil.GetU1KeyNameByButtonString(buttonName));
+            }
             // Burst shadow
             [NativeThrows]
             // This will only be referenced from Burst-generated code, in place of the version without the
             // __Managed suffix. So we need to make sure it will not get stripped.
             [RequiredMember]
             internal extern static unsafe byte GetButtonDown__Unmanaged(byte* buttonName, int buttonNameLen);
+
             [NativeThrows]
-            internal extern static bool GetButtonUp(string buttonName);
+            internal static bool GetButtonUp(string buttonName)
+            {
+                return InputComponentU3_C.GetKeyUp(U3InputUtil.GetU1KeyNameByButtonString(buttonName));
+            }
             // Burst shadow
             [NativeThrows]
             // This will only be referenced from Burst-generated code, in place of the version without the
@@ -376,24 +413,54 @@ namespace UnityEngine
         public static bool GetButtonUp(string buttonName) => Internal.InputUnsafeUtility.GetButtonUp(buttonName);
 
         [NativeThrows]
-        private extern static bool GetKeyInt(KeyCode key);
+        private static bool GetKeyInt(KeyCode key)
+        {
+            return InputComponentU3_C.GetKey(U3InputUtil.GetU1KeyNameByKeyCode(key));
+        }
+
         [NativeThrows]
-        private extern static bool GetKeyUpInt(KeyCode key);
+        private static bool GetKeyUpInt(KeyCode key)
+        {
+            return InputComponentU3_C.GetKeyUp(U3InputUtil.GetU1KeyNameByKeyCode(key));
+        }
+
         [NativeThrows]
-        private extern static bool GetKeyDownInt(KeyCode key);
+        private static bool GetKeyDownInt(KeyCode key)
+        {
+            return InputComponentU3_C.GetKeyDown(U3InputUtil.GetU1KeyNameByKeyCode(key));
+        }
+
         [NativeThrows]
-        public extern static bool GetMouseButton(int button);
+        public static bool GetMouseButton(int button)
+        {
+            return InputComponentU3_C.GetKey(U3InputUtil.GetU1KeyNameByMouseButton(button));
+        }
+
         [NativeThrows]
-        public extern static bool GetMouseButtonDown(int button);
+        public static bool GetMouseButtonDown(int button)
+        {
+            return InputComponentU3_C.GetKeyDown(U3InputUtil.GetU1KeyNameByMouseButton(button));
+        }
+
         [NativeThrows]
-        public extern static bool GetMouseButtonUp(int button);
+        public static bool GetMouseButtonUp(int button)
+        {
+            return InputComponentU3_C.GetKeyUp(U3InputUtil.GetU1KeyNameByMouseButton(button));
+
+        }
         [FreeFunction("ResetInput")]
         public extern static void ResetInputAxes();
         public static bool IsJoystickPreconfigured(string joystickName) => Internal.InputUnsafeUtility.IsJoystickPreconfigured(joystickName);
         [NativeThrows]
         public extern static string[] GetJoystickNames();
+
         [NativeThrows]
-        public extern static Touch GetTouch(int index);
+        public static Touch GetTouch(int index)
+        {
+            FTouchData touchData = InputComponentU3_C.GetTouch(index);
+            return U3InputUtil.ConvertToTouch(touchData);
+        }
+
         [NativeThrows]
         public extern static PenData GetPenEvent(int index);
         [NativeThrows]
@@ -425,13 +492,30 @@ namespace UnityEngine
 
         public extern static bool simulateMouseWithTouches { get; set; }
         [NativeThrows]
-        public extern static bool anyKey { get; }
+        public static bool anyKey {
+            get
+            {
+                return InputComponentU3_C.GetAnyKey();
+            } 
+        }
         [NativeThrows]
-        public extern static bool anyKeyDown { get; }
+        public static bool anyKeyDown {
+            get
+            {
+                return InputComponentU3_C.GetAnyKeyDown();
+            } 
+        }
         [NativeThrows]
         public extern static string inputString { get; }
         [NativeThrows]
-        public extern static Vector3 mousePosition { get; }
+        public static Vector3 mousePosition {
+            get
+            {
+                FVector u1position =  InputComponentU3_C.GetMousePosition();
+                Vector3 u3position = U3VectorUtil.GetU3ScreenPointFromU1(u1position);
+                return u3position;
+            } 
+        }
         [NativeThrows]
         public extern static Vector2 mouseScrollDelta { get; }
         public extern static IMECompositionMode imeCompositionMode { get; set; }
@@ -453,10 +537,13 @@ namespace UnityEngine
             get;
         }
 
-        public extern static int touchCount
+        public static int touchCount
         {
             [FreeFunction("GetTouchCount")]
-            get;
+            get
+            {
+                return InputComponentU3_C.GetTouchCount();
+            }
         }
         public extern static bool touchPressureSupported
         {
@@ -491,10 +578,21 @@ namespace UnityEngine
             [FreeFunction("GetDeviceOrientation")]
             get;
         }
-        public extern static Vector3 acceleration
+        public static Vector3 acceleration
         {
             [FreeFunction("GetAcceleration")]
-            get;
+            get
+            {
+                APlayerController playerController = UGameplayStatics.GetPlayerController(Unreal.GWorld, 0);       
+                if (playerController!=null)
+                {
+                    FVector Tilt = FVector.Zero(), RotationRate = FVector.Zero(), Gravity = FVector.Zero(), Acceleration = FVector.Zero();
+                    playerController.GetInputMotionState(ref Tilt, ref RotationRate, ref Gravity, ref Acceleration);
+        
+                    return U3VectorUtil.GetU3AccelerationFromU1(Acceleration);
+                }
+                return Vector3.zero;   
+            }
         }
         public extern static bool compensateSensors
         {

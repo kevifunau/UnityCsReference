@@ -3,8 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Script.UtuRuntime;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.IO;
 using UnityEngine.Scripting;
 
 namespace UnityEngine.Video
@@ -14,32 +16,53 @@ namespace UnityEngine.Video
     public sealed class VideoClip : Object
     {
         private VideoClip() {}
+        private FVideoClip CacheVideoClip;
+        public VideoClip(FVideoClip videoClip)
+        {
+            originalPath = videoClip.OriginalPath.ToString();
+            frameCount = videoClip.frameCount;
+            frameRate = videoClip.frameRate;
+            length = videoClip.Duration;
+            width = videoClip.width;
+            height = videoClip.height;
+            pixelAspectRatioNumerator = videoClip.pixelAspectRatioNumerator;
+            pixelAspectRatioDenominator = videoClip.pixelAspectRatioDenominator;
+            sRGB = videoClip.sRGB;
+            audioTrackCount = videoClip.audioTrackCount;
+            CacheVideoClip = videoClip;
+        }
 
-        public extern string originalPath { get; }
+        public string originalPath { get; }
 
-        public extern ulong frameCount { get; }
+        public ulong frameCount { get; }
 
-        public extern double frameRate { get; }
+        public double frameRate { get; }
 
-        [NativeName("Duration")]
-        public extern double length { get; }
+        public double length { get; }
 
-        public extern uint width { get; }
+        public uint width { get; }
 
-        public extern uint height { get; }
+        public uint height { get; }
 
-        public extern uint pixelAspectRatioNumerator { get; }
+        public uint pixelAspectRatioNumerator { get; }
 
-        public extern uint pixelAspectRatioDenominator { get; }
+        public uint pixelAspectRatioDenominator { get; }
 
-        public extern bool sRGB { [NativeName("IssRGB")] get; }
+        public bool sRGB { get; }
 
-        public extern ushort audioTrackCount { get; }
+        public ushort audioTrackCount { get; }
 
-        public extern ushort GetAudioChannelCount(ushort audioTrackIdx);
-
-        public extern uint GetAudioSampleRate(ushort audioTrackIdx);
-
-        public extern string GetAudioLanguage(ushort audioTrackIdx);
+        public ushort GetAudioChannelCount(ushort audioTrackIdx)
+        {
+            return 0;
+        }
+        public uint GetAudioSampleRate(ushort audioTrackIdx)
+        {
+            return 0;
+        }
+        public string GetAudioLanguage(ushort audioTrackIdx)
+        {
+            return "";
+        }
     }
 }

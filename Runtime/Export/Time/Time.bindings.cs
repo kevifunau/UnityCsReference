@@ -3,6 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Script.CoreUObject;
+using Script.Engine;
+using Script.UnrealCSharp;
 using UnityEngine.Bindings;
 
 namespace UnityEngine
@@ -13,8 +16,7 @@ namespace UnityEngine
     public class Time
     {
         // The time this frame has started (RO). This is the time in seconds since the start of the game.
-        [NativeProperty("CurTime")]
-        public static extern float time { get; }
+        [NativeProperty("CurTime")] public static float time => (float)UGameplayStatics.GetTimeSeconds(Unreal.GWorld);
 
         // The time this frame has started (RO). This is the time in seconds since the start of the game. Double precision version of time, please prefer to use it instead of single precision (float).
         [NativeProperty("CurTime")]
@@ -29,7 +31,7 @@ namespace UnityEngine
         public static extern double timeSinceLevelLoadAsDouble { get; }
 
         // The time in seconds it took to complete the last frame (RO).
-        public static extern float deltaTime { get; }
+        public static float deltaTime { get; set; }
 
         // The time the latest MonoBehaviour::pref::FixedUpdate has started (RO). This is the time in seconds since the start of the game.
         public static extern float fixedTime { get; }
@@ -54,13 +56,23 @@ namespace UnityEngine
         public static extern double fixedUnscaledTimeAsDouble { get; }
 
         // The delta time based upon the realTime
-        public static extern float unscaledDeltaTime { get; }
+        public static float unscaledDeltaTime
+        {
+            get
+            {
+                return AGUSDObjectUtil.GetUnscaledDeltaTime();
+            }
+            set
+            {
+                AGUSDObjectUtil.SetUnscaledDeltaTime(value);
+            }
+        }
 
         // The delta time based upon the realTime
         public static extern float fixedUnscaledDeltaTime { get; }
 
         // The interval in seconds at which physics and other fixed frame rate updates (like MonoBehaviour's MonoBehaviour::pref::FixedUpdate) are performed.
-        public static extern float fixedDeltaTime  { get; set; }
+        public static float fixedDeltaTime  { get; set; }
 
         // The maximum time a frame can take. Physics and other fixed frame rate updates (like MonoBehaviour's MonoBehaviour::pref::FixedUpdate)
         public static extern float maximumDeltaTime  { get; set; }
@@ -72,10 +84,20 @@ namespace UnityEngine
         public static extern float maximumParticleDeltaTime  { get; set; }
 
         // The scale at which the time is passing. This can be used for slow motion effects.
-        public static extern float timeScale { get; set; }
+        public static float timeScale
+        {
+            get
+            {
+                return UGameplayStatics.GetGlobalTimeDilation(Unreal.GWorld);
+            }
+            set
+            {
+                UGameplayStatics.SetGlobalTimeDilation(Unreal.GWorld, value);
+            }
+        }
 
         // The total number of frames that have passed (RO).
-        public static extern int frameCount { get; }
+        public static int frameCount { get; set; }
 
         //*undocumented*
         [NativeProperty("RenderFrameCount")]
@@ -83,7 +105,7 @@ namespace UnityEngine
 
         // The real time in seconds since the game started (RO).
         [NativeProperty("Realtime")]
-        public static extern float realtimeSinceStartup { get; }
+        public static float realtimeSinceStartup =>(float)UGameplayStatics.GetRealTimeSeconds(Unreal.GWorld);
 
         // The real time in seconds since the game started (RO). Double precision version of realtimeSinceStartup, please prefer to use it instead of single precision (float).
         [NativeProperty("Realtime")]

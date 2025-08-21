@@ -5,6 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Script.CoreUObject;
+using Script.Dynamic;
+using Script.DynamicCodeGen;
+using Script.Engine;
+using Script.Niagara;
+using Script.UnrealCSharp;
+using Script.UtuRuntime;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using UnityEngine.Scripting;
@@ -18,30 +25,157 @@ using UnityEngine.ParticleSystemJobs;
 
 namespace UnityEngine
 {
+    
     [NativeHeader("ParticleSystemScriptingClasses.h")]
     [NativeHeader("Modules/ParticleSystem/ParticleSystem.h")]
     [NativeHeader("Modules/ParticleSystem/ParticleSystemGeometryJob.h")]
     [NativeHeader("Modules/ParticleSystem/ScriptBindings/ParticleSystemScriptBindings.h")]
     [UsedByNativeCode]
     [RequireComponent(typeof(Transform))]
+    [U3Exported(false)]
+     
     public sealed partial class ParticleSystem : Component
     {
+#region U1
+        private UtuNiagaraCallback utuNiagaraCallback;
+
+        [UFunction,BlueprintCallable, BlueprintImplementableEvent] 
+        public void OnCallbackCS(TArray<AActor> hitResults, UNiagaraComponent niagaraComponent)
+        {
+            if (!niagaraComponent.IsValid()) return;
+
+            var particleActor = niagaraComponent.GetOwner();
+            if (!particleActor.IsValid()) return;
+
+            var particleRoot = particleActor.K2_GetRootComponent();
+            if (particleRoot == null) return;
+            
+            // 获取粒子系统上的行为组件
+            TArray<USceneComponent> particleComponents = new TArray<USceneComponent>();
+            particleRoot.GetChildrenComponents(false, ref particleComponents);
+            
+            // 遍历所有碰撞结果
+            foreach (var hitResult in hitResults)
+            {
+                if (!hitResult.IsValid()) continue;
+                
+                // 直接获取碰撞体对象
+                GameObject hitGameObject = GameObject.GetFromActorOrCreate(hitResult);
+                if (hitGameObject == null) continue;
+                
+                foreach (var particleComponent in particleComponents)
+                {
+                    var behaviour = particleComponent as U3BehaviourComponentU3_C;
+                    if (behaviour != null)
+                    {
+                        behaviour.OnParticleCollision(hitGameObject);
+                    }
+                }
+            }
+        }
+        void Start()
+        {
+            if (componentU1 != null)
+            {
+                utuNiagaraCallback = (UtuNiagaraCallback)owner.AddComponentByClass(UtuNiagaraCallback.StaticClass(), false, FTransform.Identity, false);
+                //TODO: 等脚本框架支持NewObject后替换为this
+                var tmpForCallbackComponent = Unreal.NewObject<ParticleSystemU3_C>();
+                utuNiagaraCallback.RegisterNiagaraCallback(componentU1_, tmpForCallbackComponent);
+                utuNiagaraCallback.OnUtuNiagaraEventDelegate.Add(tmpForCallbackComponent, OnCallbackCS);
+            }
+        }
+
+        private UNiagaraComponent componentU1_;
+        [HideInInspector]
+        public UNiagaraComponent componentU1
+        {
+            get
+            {
+                if (componentU1_ == null)
+                {
+                    componentU1_ = GameObject.GetU1ChildComponent<UNiagaraComponent>(u1Component);
+                }
+                
+                return componentU1_;
+            }
+            set { componentU1_ = value; }
+        }
+        
+        private List<UNiagaraComponent> _catchChildcomponentsU1 = null;
+        [HideInInspector]
+        public List<UNiagaraComponent> CatchChildNiagaraComponents 
+        {
+            get
+            {
+                if (_catchChildcomponentsU1 == null)
+                {
+                    _catchChildcomponentsU1 = new List<UNiagaraComponent>();
+                    InitializeChildsU1Component(); // 首次访问时初始化
+                }
+                return _catchChildcomponentsU1;
+            }
+        }
+
+        private void GetAllNiagaraComponentInChildActor(AActor root)
+        {
+            if (root == null)
+                return;
+            //var nig = (UNiagaraComponent) root.GetComponentByClass(UNiagaraComponent.StaticClass());
+            // if (nig != null)
+            // {
+            //     _catchChildcomponentsU1.Add(nig);
+            // }
+            var nigs = root.K2_GetComponentsByClass(UNiagaraComponent.StaticClass());
+            foreach (var nig in nigs)
+            {
+                _catchChildcomponentsU1.Add((UNiagaraComponent) nig);
+            }
+
+            var childActors = new TArray<AActor>();
+            root.GetAttachedActors(ref childActors);
+            foreach (var childActor in childActors)
+                GetAllNiagaraComponentInChildActor(childActor);
+        }
+        private void InitializeChildsU1Component()
+        {
+            GetAllNiagaraComponentInChildActor(gameObject.actor);
+        }
+#endregion
+
         // Properties
-        extern public bool isPlaying
+        public bool isPlaying
         {
-            [NativeName("SyncJobs(false)->IsPlaying")] get;
+            get
+            {
+                if (componentU1 != null)
+                    return componentU1.IsActive();
+                return false;
+            }
         }
-        extern public bool isEmitting
+        public bool isEmitting
         {
-            [NativeName("SyncJobs(false)->IsEmitting")] get;
+            get
+            {
+                return isPlaying;
+            }
         }
-        extern public bool isStopped
+        public bool isStopped
         {
-            [NativeName("SyncJobs(false)->IsStopped")] get;
+            get
+            {
+                if (componentU1 != null)
+                    return !componentU1.IsActive();
+                return false;
+            }
         }
-        extern public bool isPaused
+        public bool isPaused
         {
-            [NativeName("SyncJobs(false)->IsPaused")] get;
+            get
+            {
+                if (componentU1 != null)
+                    return componentU1.IsPaused();
+                return true;
+            }
         }
         extern public int particleCount
         {
@@ -157,22 +291,92 @@ namespace UnityEngine
         public void Simulate(float t, [DefaultValue("true")] bool withChildren, [DefaultValue("true")] bool restart) { Simulate(t, withChildren, restart, true); }
         public void Simulate(float t, [DefaultValue("true")] bool withChildren) { Simulate(t, withChildren, true); }
         public void Simulate(float t) { Simulate(t, true); }
-
-        [FreeFunction(Name = "ParticleSystemScriptBindings::Play", HasExplicitThis = true)]
-        extern public void Play([DefaultValue("true")] bool withChildren);
+        
+        public void Play([DefaultValue("true")] bool withChildren)
+        {
+            if (withChildren)
+            {
+                foreach (var v in this.CatchChildNiagaraComponents)
+                {
+                    if(v != null)
+                        v.Activate();
+                }
+            }
+            else
+            {
+                if (componentU1 != null)
+                    componentU1.Activate();
+            }
+        }
         public void Play() { Play(true);  }
-
-        [FreeFunction(Name = "ParticleSystemScriptBindings::Pause", HasExplicitThis = true)]
-        extern public void Pause([DefaultValue("true")] bool withChildren);
+        
+        public void Pause([DefaultValue("true")] bool withChildren)
+        {
+            if (withChildren)
+            {
+                foreach (var v in this.CatchChildNiagaraComponents)
+                {
+                    if(v != null)
+                        v.SetPaused(true);
+                }
+            }
+            else
+            {
+                if (componentU1 != null)
+                    componentU1.SetPaused(true);
+            }
+        }
         public void Pause() { Pause(true); }
-
-        [FreeFunction(Name = "ParticleSystemScriptBindings::Stop", HasExplicitThis = true)]
-        extern public void Stop([DefaultValue("true")] bool withChildren, [DefaultValue("ParticleSystemStopBehavior.StopEmitting")] ParticleSystemStopBehavior stopBehavior);
+        
+        public void Stop([DefaultValue("true")] bool withChildren,
+            [DefaultValue("ParticleSystemStopBehavior.StopEmitting")] ParticleSystemStopBehavior stopBehavior)
+        {
+            if (withChildren)
+            {
+                foreach (var v in this.CatchChildNiagaraComponents)
+                {
+                    if (v != null)
+                    {
+                        v.Deactivate();   
+                    }
+                        
+                }
+            }
+            else
+            {
+                if (componentU1 != null)
+                {
+                    componentU1.Deactivate();
+                }
+                    
+            }
+        }
         public void Stop([DefaultValue("true")] bool withChildren) { Stop(withChildren, ParticleSystemStopBehavior.StopEmitting); }
         public void Stop() { Stop(true); }
-
-        [FreeFunction(Name = "ParticleSystemScriptBindings::Clear", HasExplicitThis = true)]
-        extern public void Clear([DefaultValue("true")] bool withChildren);
+        
+        public void Clear([DefaultValue("true")] bool withChildren)
+        {
+            if (withChildren)
+            {
+                foreach (var v in this.CatchChildNiagaraComponents)
+                {
+                    if (v != null)
+                    {
+                        v.ResetSystem();
+                        v.Deactivate();
+                    }
+                        
+                }
+            }
+            else
+            {
+                if (componentU1 != null)
+                {
+                    componentU1.ResetSystem();
+                    componentU1.Deactivate();
+                }
+            }
+        }
         public void Clear() { Clear(true); }
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::IsAlive", HasExplicitThis = true)]
