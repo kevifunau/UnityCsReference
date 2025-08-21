@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+        <DefineConstants>$(DefineConstants);UE_5_0_OR_LATER;UE_5_1_OR_LATER;UE_5_2_OR_LATER;UE_5_3_OR_LATER;UE_5_4_OR_LATER;UE_5_5_OR_LATER;WITH_EDITOR;UNITY_EDITOR;UNITY_2021_2_OR_NEWER;UNITY_2021_3_OR_NEWER</DefineConstants>
+        <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+        <NoWarn>0109;1701;1702;8500</NoWarn>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+        <NoWarn>0109;1701;1702;8500</NoWarn>
+    </PropertyGroup>
+    <ItemGroup>
+      <Reference Include="Bee.BeeDriver2">
+        <HintPath>External\Dependdlls\Bee.BeeDriver2.dll</HintPath>
+      </Reference>
+      <Reference Include="Bee.BinLog">
+        <HintPath>External\Dependdlls\Bee.BinLog.dll</HintPath>
+      </Reference>
+      <Reference Include="Bee.TinyProfiler2">
+        <HintPath>External\Dependdlls\Bee.TinyProfiler2.dll</HintPath>
+      </Reference>
+      <Reference Include="ExCSS.Unity">
+        <HintPath>External\Dependdlls\ExCSS.Unity.dll</HintPath>
+      </Reference>
+      <Reference Include="System.CodeDom">
+        <HintPath>External\Dependdlls\System.CodeDom.dll</HintPath>
+      </Reference>
+      <Reference Include="Unity.Cecil">
+        <HintPath>External\Dependdlls\Unity.Cecil.dll</HintPath>
+      </Reference>
+      <Reference Include="Unity.CompilationPipeline.Common">
+        <HintPath>External\Dependdlls\Unity.CompilationPipeline.Common.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+</Project>
